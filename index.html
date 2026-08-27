@@ -1,0 +1,1784 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>대구광역시 지역사회보장계획 온라인 모니터링 시스템</title>
+<script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.24.7/babel.min.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+
+<!-- Firebase SDK (v10 compat) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+
+<style>
+body{margin:0}
+#cdn-error{display:none;padding:40px;text-align:center;font-family:'Malgun Gothic',sans-serif;color:#555;line-height:1.8}
+.custom-scrollbar::-webkit-scrollbar { width: 6px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
+@media print {
+  body { background: white !important; }
+  header, nav, button, .no-print { display: none !important; }
+  main { padding: 0 !important; max-width: 100% !important; }
+  .report-box { border: none !important; box-shadow: none !important; padding: 0 !important; }
+}
+</style>
+</head><body><div id="root"></div>
+<div id="cdn-error"><h2>화면을 불러오지 못했습니다</h2>인터넷 연결을 확인한 뒤 새로고침(F5) 해주세요.</div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyD09oQbCkStzAaDQMk6FWyWebdTW2xf4Rk",
+  authDomain: "daegu-monitoring.firebaseapp.com",
+  projectId: "daegu-monitoring",
+  storageBucket: "daegu-monitoring.firebasestorage.app",
+  messagingSenderId: "144065627845",
+  appId: "1:144065627845:web:1256810b74f47ab9d392ac"
+};
+
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+}
+const db = firebase.firestore();
+const storage = firebase.storage();
+</script>
+
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useCallback, useMemo } = React;
+
+const STRATEGY_NAMES = {
+  "Ⅰ-1": "지속가능한 사회보장기반 구축",
+  "Ⅰ-2": "생애주기별·대상별 맞춤형 돌봄 강화",
+  "Ⅰ-3": "건강·여가생활 만족 증진",
+  "Ⅰ-4": "활력있는 일자리·자립 역량 강화",
+  "Ⅰ-5": "배우며 함께하는 공동체 조성",
+  "Ⅰ-6": "권리기반 안전생활 지원 강화",
+  "Ⅱ-1": "구·군 사회보장급여 이용 및 제공 기반 구축",
+  "Ⅱ-2": "구·군 역량강화",
+  "Ⅱ-3": "지역사회 거버넌스 구축",
+  "Ⅱ-4": "구·군 사회보장 인프라 확충"
+};
+
+const PROJECTS_RAW = [{"id": "Ⅰ-1-1", "num": "Ⅰ-1-1", "name": "복지사각지대 대구형 사회안전망 강화", "dept": "복지정책과", "team": "희망복지팀", "officer": "최영희 (053-803-6933)", "kpi": "달구벌 희망급여 지원건수", "goal": "2000", "unit": "건", "budget": 1089.0, "sys": "Ⅰ"}, {"id": "Ⅰ-1-2", "num": "Ⅰ-1-2", "name": "민관협력 위기가구 맞춤형 서비스 강화", "dept": "복지정책과", "team": "희망복지팀", "officer": "최영희 (053-803-6933)", "kpi": "달구벌 희망복지기동대 서비스 지원 가구 수", "goal": 2000, "unit": "건", "budget": 0.0, "sys": "Ⅰ"}, {"id": "Ⅰ-1-3", "num": "Ⅰ-1-3", "name": "대구형 찾아가는 보건복지서비스", "dept": "복지정책과", "team": "희망복지팀", "officer": "우진화 (053-803-6932)", "kpi": "사례 연계 지원율", "goal": 70, "unit": "%", "budget": 170.0, "sys": "Ⅰ"}, {"id": "Ⅰ-1-4", "num": "Ⅰ-1-4", "name": "대구광역시 아동돌봄플랫폼 운영", "dept": "교육청소년과", "team": "아동친화팀", "officer": "서채명 (053-803-5221)", "kpi": "아동돌봄플랫폼 월평균 이용자 수", "goal": "5880", "unit": "명", "budget": 0.0, "sys": "Ⅰ"}, {"id": "Ⅰ-1-5", "num": "Ⅰ-1-5", "name": "원스톱 청년정책 플랫폼 구축", "dept": "청년정책과", "team": "청년정책팀", "officer": "백헌채 (053-803-2954)", "kpi": "플랫폼 이용자 증가율", "goal": "", "unit": "%", "budget": 0.0, "sys": "Ⅰ"}, {"id": "Ⅰ-1-6", "num": "Ⅰ-1-6", "name": "대구평생학습플랫폼 운영", "dept": "대학인재과", "team": "평생교육팀", "officer": "임승미 (053-803-8662)", "kpi": "평생학습플랫폼 이용자 증가율", "goal": "10", "unit": "%", "budget": 110.0, "sys": "Ⅰ"}, {"id": "Ⅰ-1-7", "num": "Ⅰ-1-7", "name": "신나는 아동친화도시 조성", "dept": "교육청소년과", "team": "아동친화팀", "officer": "홍희정 (053-803-5896)", "kpi": "아동정책영향평가 실시 건수", "goal": "18", "unit": "건", "budget": 25.0, "sys": "Ⅰ"}, {"id": "Ⅰ-1-9", "num": "Ⅰ-1-9", "name": "건강하고 행복한 고령친화도시 조성", "dept": "어르신복지과", "team": "어르신정책팀", "officer": "정현진 (053-803-4132)", "kpi": "노인복지종합계획 수립 진행률", "goal": 100, "unit": "%", "budget": 0.0, "sys": "Ⅰ"}, {"id": "Ⅰ-2-1", "num": "Ⅰ-2-1", "name": "대구형 방과후 틈새돌봄 활성화", "dept": "교육청소년과", "team": "아동친화팀", "officer": "서채명 (053-803-5221)", "kpi": "방과후 틈새돌봄 이용자 만족도", "goal": "95", "unit": "%", "budget": 800.0, "sys": "Ⅰ"}, {"id": "Ⅰ-2-2", "num": "Ⅰ-2-2", "name": "독거 노인 중장년 고독사 제로 프로젝트", "dept": "복지정책과", "team": "희망복지팀", "officer": "조은숙 (053-803-6931)", "kpi": "서비스지원 증가율", "goal": 4, "unit": "%", "budget": 317.0, "sys": "Ⅰ"}, {"id": "Ⅰ-2-3", "num": "Ⅰ-2-3", "name": "산모 신생아 지원 강화", "dept": "출산보육과", "team": "출산지원팀", "officer": "박세진 (053-803-5451)", "kpi": "산모 신생아 지원 강화 서비스 이용률", "goal": 70, "unit": "%", "budget": 8921.0, "sys": "Ⅰ"}, {"id": "Ⅰ-2-4", "num": "Ⅰ-2-4", "name": "다양한 위기 취약 가족 지원", "dept": "복지정책과", "team": "희망복지팀", "officer": "최영희 (053-803-6933)", "kpi": "청년베이스캠프 참여자 수 ", "goal": 70, "unit": "명", "budget": 100.0, "sys": "Ⅰ"}, {"id": "Ⅰ-2-5", "num": "Ⅰ-2-5", "name": "중증장애인 활동지원", "dept": "장애인복지과", "team": "장애인서비스팀", "officer": "김규동 (053-803-3992)", "kpi": "중증장애인 활동지원서비스 예산 증가율", "goal": 5, "unit": "%", "budget": 14773.0, "sys": "Ⅰ"}, {"id": "Ⅰ-2-6", "num": "Ⅰ-2-6", "name": "장애인 특화주간보호센터 확대", "dept": "장애인복지과", "team": "장애인시설팀", "officer": "신유주 (053-803-6762)", "kpi": "특화 주간이용시설 설치 개소 수", "goal": 1, "unit": "개소", "budget": 100.0, "sys": "Ⅰ"}, {"id": "Ⅰ-2-7", "num": "Ⅰ-2-7", "name": "독거노인 마음잇기 사업", "dept": "어르신복지과", "team": "어르신복지팀", "officer": "이수진 (053-803-4143)", "kpi": "독거노인 1:1 결연실적", "goal": 2800, "unit": "명", "budget": 100.0, "sys": "Ⅰ"}, {"id": "Ⅰ-2-8", "num": "Ⅰ-2-8", "name": "저소득 재가어르신 식사배달 지원", "dept": "어르신복지과", "team": "어르신복지팀", "officer": "이수진 (053-803-4143)", "kpi": "서비스 이용자 수", "goal": "2900", "unit": "명", "budget": 1482.0, "sys": "Ⅰ"}, {"id": "Ⅰ-2-9", "num": "Ⅰ-2-9", "name": "지역사회 통합돌봄 기반마련", "dept": "복지정책과", "team": "복지서비스팀", "officer": "장선아 (053-803-6251)", "kpi": "통합돌봄 정책추진 관련 간담회 및 교육 운영 횟수", "goal": 12, "unit": "회", "budget": 20.0, "sys": "Ⅰ"}, {"id": "Ⅰ-2-10", "num": "Ⅰ-2-10", "name": "공공돌봄 운영", "dept": "복지정책과", "team": "복지서비스팀", "officer": "박준희 (053-803-6253)", "kpi": "공공돌봄 이용자 수", "goal": 60, "unit": "명", "budget": 72.0, "sys": "Ⅰ"}, {"id": "Ⅰ-3-1", "num": "Ⅰ-3-1", "name": "달구벌 건강주치의사업 활성화", "dept": "보건의료정책과", "team": "공공의료팀", "officer": "조정희 (053-803-5363)", "kpi": "달구벌 건강주치의 서비스 제공 건수", "goal": 3790, "unit": "건", "budget": 294.0, "sys": "Ⅰ"}, {"id": "Ⅰ-3-2", "num": "Ⅰ-3-2", "name": "특수취약계층 진료지원 강화", "dept": "보건의료정책과", "team": "공공의료팀", "officer": "조정희 (053-803-5363)", "kpi": "특수취약계층 진료 지원 연인원 수", "goal": 7190, "unit": "명", "budget": 410.0, "sys": "Ⅰ"}, {"id": "Ⅰ-3-3", "num": "Ⅰ-3-3", "name": "난임부부 맞춤형 지원", "dept": "출산보육과", "team": "출산지원팀", "officer": "박세진 (053-803-5451)", "kpi": "난임부부 시술비 지원 건수", "goal": "11000", "unit": "건", "budget": 12400.0, "sys": "Ⅰ"}, {"id": "Ⅰ-3-4", "num": "Ⅰ-3-4", "name": "대구광역자살예방센터 우영", "dept": "건강증진과", "team": "정신건강팀", "officer": "심연지 (053-803-4103)", "kpi": "온오프라인 자사위험 환경개선 건수", "goal": 3877, "unit": "건", "budget": 307.0, "sys": "Ⅰ"}, {"id": "Ⅰ-3-5", "num": "Ⅰ-3-5", "name": "시민건강놀이터 활성화", "dept": "건강증진과", "team": "건강정책팀", "officer": "김지영 (053-803-4096)", "kpi": "건강지원서비스 제공건수", "goal": "132000", "unit": "건", "budget": 1410.0, "sys": "Ⅰ"}, {"id": "Ⅰ-3-6", "num": "Ⅰ-3-6", "name": "기억학교 운영", "dept": "어르신복지과", "team": "어르신복지팀", "officer": "이수진 (053-803-4143)", "kpi": "기억학교 이용자 및 가족 만족도", "goal": 96.5, "unit": "점", "budget": 7878.0, "sys": "Ⅰ"}, {"id": "Ⅰ-3-7", "num": "Ⅰ-3-7", "name": "대구생활문화센터 운영", "dept": "문화예술정책과", "team": "문화기획팀", "officer": "남상협 (053-803-3738)", "kpi": "이용자 만족도", "goal": 90, "unit": "점", "budget": 380.0, "sys": "Ⅰ"}, {"id": "Ⅰ-3-8", "num": "Ⅰ-3-8", "name": "대구형 경로당 활성화", "dept": "어르신복지과", "team": "어르신정책팀", "officer": "이수현 (053-803-4136)", "kpi": "경로당 활성화 참여 경로당 수", "goal": 730, "unit": "개소", "budget": 708.0, "sys": "Ⅰ"}, {"id": "Ⅰ-4-1", "num": "Ⅰ-4-1", "name": "세대별(여성·청년·중장년) 취업 지원 및 일자리 매칭 정보망 구축", "dept": "고용노동정책과", "team": "원스톱일자리지원센터", "officer": "신대환 (053-803-3497)", "kpi": "구인구직 상담 및 취업 지원 서비스 제공 대구 일자리포털 이용(페이지뷰) 건", "goal": "30000 2000000", "unit": "건", "budget": 50.0, "sys": "Ⅰ"}, {"id": "Ⅰ-4-3", "num": "Ⅰ-4-3", "name": "신중년 사회공헌활동 지원사업", "dept": "고용노동정책과", "team": "고용지원팀", "officer": "김지혜 (053-803-3701)", "kpi": "참여율", "goal": "95", "unit": "%", "budget": 203.0, "sys": "Ⅰ"}, {"id": "Ⅰ-4-4", "num": "Ⅰ-4-4", "name": "Re-start 4050 채용연계 일자리 지원", "dept": "고용노동정책과", "team": "직업능력개발팀", "officer": "이재건 (053-803-6733)", "kpi": "교육 수료율", "goal": 80, "unit": "%", "budget": 50.0, "sys": "Ⅰ"}, {"id": "Ⅰ-4-5", "num": "Ⅰ-4-5", "name": "노인일자리 사업 기능 개선 및 활성화", "dept": "어르신복지과", "team": "어르신정책팀", "officer": "정은정 (053-803-4135)", "kpi": "시니어클럽 특성화 사업 지원 개소 수", "goal": 6, "unit": "개소", "budget": 200.0, "sys": "Ⅰ"}, {"id": "Ⅰ-4-6", "num": "Ⅰ-4-6", "name": "탈시설 장애인 지역사회 자립지원", "dept": "장애인복지과", "team": "장애인자립지원팀", "officer": "조규용 (053-803-6842)", "kpi": "신규 탈시설/재가 장애인 자립지원 인원", "goal": "8", "unit": "명", "budget": 1000.0, "sys": "Ⅰ"}, {"id": "Ⅰ-4-7", "num": "Ⅰ-4-7", "name": "사회서비스분야 혁신을 위한 신규모델 개발", "dept": "민생경제과", "team": "사회적경제팀", "officer": "곽은정 (053-803-6471)", "kpi": "사회적경제기업 모델 발굴 건수", "goal": 3, "unit": "건", "budget": 25.0, "sys": "Ⅰ"}, {"id": "Ⅰ-4-8", "num": "Ⅰ-4-8", "name": "사회문제 해결 및 소셜임팩트 강화 협의체 구성 운영", "dept": "민생경제과", "team": "사회적경제팀", "officer": "곽은정 (053-803-6471)", "kpi": "소셜임팩트 강화를 위한 협의체 구축 및 개최 횟수", "goal": 3, "unit": "회", "budget": 1.0, "sys": "Ⅰ"}, {"id": "Ⅰ-4-9", "num": "Ⅰ-4-9", "name": "청년 일 경험 지원", "dept": "청년정책과", "team": "청년생활팀", "officer": "김인선 (053-803-2972)", "kpi": "일 경험 프로그램 참여율", "goal": 90, "unit": "%", "budget": 155.0, "sys": "Ⅰ"}, {"id": "Ⅰ-5-1", "num": "Ⅰ-5-1", "name": "지역기반 평생교육 활성화 및 시민역량 강화", "dept": "대학인재과", "team": "평생교육팀", "officer": "김수경 (053-803-8661)", "kpi": "평생교육 프로그램 참여자 수", "goal": 1310, "unit": "명", "budget": 255.0, "sys": "Ⅰ"}, {"id": "Ⅰ-5-2", "num": "Ⅰ-5-2", "name": "서민자녀 교육바우처 지원", "dept": "교육청소년과", "team": "교육지원팀", "officer": "이유리 (053-803-3913)", "kpi": "바우처카드 사용률", "goal": 85, "unit": "%", "budget": 2000.0, "sys": "Ⅰ"}, {"id": "Ⅰ-5-3", "num": "Ⅰ-5-3", "name": "풀뿌리 신규 마을공동체 지원 강화", "dept": "행정과", "team": "지역공동체팀", "officer": "장윤기 (053-803-4382)", "kpi": "마을공동체 참여단체 수", "goal": "25", "unit": "건", "budget": 35.0, "sys": "Ⅰ"}, {"id": "Ⅰ-5-4", "num": "Ⅰ-5-4", "name": "마을복지계획 활성화", "dept": "복지정책과", "team": "희망복지팀", "officer": "우진화 (053-803-6932)", "kpi": "마을복지계획 수립 및 시행 읍면동 수", "goal": 4, "unit": "개소", "budget": 0.0, "sys": "Ⅰ"}, {"id": "Ⅰ-5-5", "num": "Ⅰ-5-5", "name": "우리마을 교육나눔사업 운영", "dept": "교육청소년과", "team": "청소년정책팀", "officer": "신성련 (053-803-5872)", "kpi": "마을 프로그램 수", "goal": 680, "unit": "개", "budget": 880.0, "sys": "Ⅰ"}, {"id": "Ⅰ-5-6", "num": "Ⅰ-5-6", "name": "다문화가정 아동학습 지원", "dept": "여성가족과", "team": "가족다문화팀", "officer": "이지은 (053-803-6724)", "kpi": "지원 인원", "goal": 100, "unit": "명", "budget": 30.0, "sys": "Ⅰ"}, {"id": "Ⅰ-5-7", "num": "Ⅰ-5-7", "name": "청년 초반기 진로커리어 교육 지원", "dept": "대학인재과", "team": "인재유치팀", "officer": "남수진 (053-803-8652)", "kpi": "지역대학 입시정보 제공 오프라인 플랫폼 개최 횟수", "goal": 18, "unit": "회", "budget": 130.0, "sys": "Ⅰ"}, {"id": "Ⅰ-5-8", "num": "Ⅰ-5-8", "name": "결혼이민자 초기 적응 지원", "dept": "여성가족과", "team": "가족다문화팀", "officer": "강은영 (053-803-6721)", "kpi": "결혼이민자 초기 적응 지원사업 수혜인원 수", "goal": 100, "unit": "명", "budget": 69.0, "sys": "Ⅰ"}, {"id": "Ⅰ-6-1", "num": "Ⅰ-6-1", "name": "학대피해아동 보호지원 강화", "dept": "교육청소년과", "team": "아동복지팀", "officer": "정현희 (053-803-5892)", "kpi": "입소율", "goal": 35, "unit": "%", "budget": 1064.0, "sys": "Ⅰ"}, {"id": "Ⅰ-6-2", "num": "Ⅰ-6-2", "name": "청년 주거상향 사다리 구축사업 활성화", "dept": "주택과", "team": "주택정책팀", "officer": "김연정 (053-803-4613)", "kpi": "청년 전월세 임차보증금 대출이자 지원대상자 수", "goal": 800, "unit": "명", "budget": 2150.0, "sys": "Ⅰ"}, {"id": "Ⅰ-6-4", "num": "Ⅰ-6-4", "name": "여성폭력 안심환경 조성", "dept": "여성가족과", "team": "여성권익팀", "officer": "조영균 (053-803-6681)", "kpi": "지역 주민 만족도", "goal": "85", "unit": "점", "budget": 30.0, "sys": "Ⅰ"}, {"id": "Ⅰ-6-6", "num": "Ⅰ-6-6", "name": "재난취약계층 보호강화", "dept": "복지정책과", "team": "생활보장팀", "officer": "김정식 (053-803-3971)", "kpi": "재난보호대책 지원대상자 수", "goal": 600, "unit": "명", "budget": 400.0, "sys": "Ⅰ"}, {"id": "Ⅰ-6-7", "num": "Ⅰ-6-7", "name": "주거복지센터 운영", "dept": "주택과", "team": "주거복지팀", "officer": "윤지현 (053-803-6903)", "kpi": "주거복지 서비스 제공 인원 수 ", "goal": 500, "unit": "명", "budget": 339.0, "sys": "Ⅰ"}, {"id": "Ⅰ-6-8", "num": "Ⅰ-6-8", "name": "어르신 대중교통 무료화", "dept": "버스운영과", "team": "버스정책팀", "officer": "이명희 (053-803-4845)", "kpi": "어르신 통합무임 카드 발급매수", "goal": "27", "unit": "만장", "budget": 54400.0, "sys": "Ⅰ"}, {"id": "Ⅰ-6-9", "num": "Ⅰ-6-9", "name": "사회적 고립청년 지원", "dept": "청년정책과", "team": "청년생활팀", "officer": "오지은 (053-803-2955)", "kpi": "상담 등 프로그램 참여율", "goal": 90, "unit": "%", "budget": 100.0, "sys": "Ⅰ"}, {"id": "Ⅱ-1-1-1", "num": "Ⅱ-1-1-1", "name": "대구형 빅데이터 기반 위기가구 조기 발굴 강화", "dept": "복지정책과", "team": "희망복지팀", "officer": "김현민 (053-803-6934)", "kpi": "복지사각지대 위기가구 발굴 증가율", "goal": 2, "unit": "%", "budget": 0.0, "sys": "Ⅱ"}, {"id": "Ⅱ-1-1-2", "num": "Ⅱ-1-1-2", "name": "주민참여형 상시 발굴 지원 체계 강화", "dept": "복지정책과", "team": "희망복지팀", "officer": "김현민 (053-803-6934)", "kpi": "명예사회복지공무원 발굴 건수", "goal": 21191, "unit": "건", "budget": 0.0, "sys": "Ⅱ"}, {"id": "Ⅱ-1-2-1", "num": "Ⅱ-1-2-1", "name": "부정수급 인식개선 홍보 및 교육", "dept": "복지정책과", "team": "복지시설팀 생활보장팀", "officer": "송정희 (053-803-6651) 정수연 (053-803-3973)", "kpi": "부정수급 인식개선 홍보 및 교육 건수", "goal": 7, "unit": "회", "budget": 0.0, "sys": "Ⅱ"}, {"id": "Ⅱ-1-2-2", "num": "Ⅱ-1-2-2", "name": "지역사회서비스 상시 모니터링 운영", "dept": "복지정책과", "team": "복지서비스팀", "officer": "박정화 (053-803-6252)", "kpi": "지역사회서비스 등록 제공기관 부정수급 예방 교육 이수율", "goal": "94", "unit": "%", "budget": 0.0, "sys": "Ⅱ"}, {"id": "Ⅱ-2-1-1", "num": "Ⅱ-2-1-1", "name": "주요관계자교육 및 워크숍", "dept": "복지정책과", "team": "복지정책팀", "officer": "강영란 (053-803-3963)", "kpi": "구·군 관계자 교육 및 워크숍 만족도", "goal": "4", "unit": "점", "budget": 3.0, "sys": "Ⅱ"}, {"id": "Ⅱ-2-1-2", "num": "Ⅱ-2-1-2", "name": "사회보장 아카데미 운영", "dept": "복지정책과", "team": "복지정책팀", "officer": "강영란 (053-803-3963)", "kpi": "교육참여자 만족도", "goal": 3.8, "unit": "점", "budget": 0.0, "sys": "Ⅱ"}, {"id": "Ⅱ-2-2-2", "num": "Ⅱ-2-2-2", "name": "전문가 컨설팅 운영", "dept": "복지정책과", "team": "복지정책팀", "officer": "강영란 (053-803-3963)", "kpi": "컨설팅 참여율", "goal": "75", "unit": "%", "budget": 9.6, "sys": "Ⅱ"}, {"id": "Ⅱ-2-2-3", "num": "Ⅱ-2-2-3", "name": "실무자 모니터링 운영", "dept": "복지정책과", "team": "복지정책팀", "officer": "강영란 (053-803-3963)", "kpi": "모니터링 참여율", "goal": 75, "unit": "%", "budget": 0.0, "sys": "Ⅱ"}, {"id": "Ⅱ-3-1-1", "num": "Ⅱ-3-1-1", "name": "사회보장위원회 거버넌스 강화", "dept": "복지정책과", "team": "복지정책팀", "officer": "강영란 (053-803-3963)", "kpi": "구·군 지역사회보장협의체 위원 참여율", "goal": "38", "unit": "%", "budget": 14.9, "sys": "Ⅱ"}, {"id": "Ⅱ-3-1-2", "num": "Ⅱ-3-1-2", "name": "사회보장위원회 소위원회 운영", "dept": "복지정책과", "team": "복지정책팀", "officer": "강영란 (053-803-3963)", "kpi": "사회보장위원회 소위원회 운영 횟수", "goal": 2, "unit": "회", "budget": 15.6, "sys": "Ⅱ"}, {"id": "Ⅱ-3-2-1", "num": "Ⅱ-3-2-1", "name": "교육 및 컨설팅 사업 활성화 지원", "dept": "복지정책과", "team": "복지정책팀", "officer": "강영란 (053-803-3963)", "kpi": "구·군 지역사회보장협의체 교육 및 컨설팅 관련 운영 지원 건수", "goal": "9", "unit": "건", "budget": 4.0, "sys": "Ⅱ"}, {"id": "Ⅱ-3-3-1", "num": "Ⅱ-3-3-1", "name": "맞춤형 민간지원사업 운영 지원", "dept": "복지정책과", "team": "복지서비스팀", "officer": "박준희 (053-803-6253)", "kpi": "이용자 만족도", "goal": "4.5", "unit": "점", "budget": 128.0, "sys": "Ⅱ"}, {"id": "Ⅱ-3-3-2", "num": "Ⅱ-3-3-2", "name": "현장 중심 정책연구 지원", "dept": "복지정책과", "team": "복지서비스팀", "officer": "박준희 (053-803-6253)", "kpi": "연구 수행 건수", "goal": 8, "unit": "건", "budget": 100.0, "sys": "Ⅱ"}, {"id": "Ⅱ-4-1-1", "num": "Ⅱ-4-1-1", "name": "지역사회보장 균형발전지원단 운영", "dept": "복지정책과", "team": "복지정책팀", "officer": "강영란 (053-803-3963)", "kpi": "구·군 상시 지원 건수", "goal": "9", "unit": "건", "budget": 53.4, "sys": "Ⅱ"}, {"id": "Ⅱ-4-2-1", "num": "Ⅱ-4-2-1", "name": "장애인지역사회통합지원센터 운영", "dept": "장애인복지과", "team": "장애인자립지원팀", "officer": "조규용 (053-803-6842)", "kpi": "시설장애인 자립지원기관 종사자 역량강화 교육 횟수", "goal": "4", "unit": "회", "budget": 450.0, "sys": "Ⅱ"}, {"id": "Ⅱ-4-3-1", "num": "Ⅱ-4-3-1", "name": "사회복지시설 종사자처우개선", "dept": "복지정책과", "team": "복지시설팀", "officer": "송정희 (053-803-6651)", "kpi": "사회복지시설 종사자 보수수준 달성률", "goal": 95, "unit": "%", "budget": 0.0, "sys": "Ⅱ"}, {"id": "Ⅱ-4-3-2", "num": "Ⅱ-4-3-2", "name": "민관협업형 사례관리 확대", "dept": "복지정책과", "team": "희망복지팀", "officer": "송정희 (053-803-6932)", "kpi": "민관 합동사례회의 개최 횟수", "goal": "221", "unit": "회", "budget": 70.0, "sys": "Ⅱ"}];
+
+const C = {
+  pine: "#005BAA", pineDark: "#003A70", pineSoft: "#E6F0FA",
+  paper: "#F6F4EE", surface: "#FFFFFF", ink: "#1C201D",
+  muted: "#6B7169", line: "#DCD8CC",
+  ihaeng: "#2E6E8E", gyeolgwa: "#7A4A6E",
+  ok: "#2E7D5B", warn: "#B8860B", bad: "#B4472F", gold: "#9C7A2E",
+};
+
+const ROLES = [
+  { id: "admin", label: "관리자(사무국)", desc: "권한 및 기간 관리" },
+  { id: "gonggong", label: "공공(사업담당)", desc: "체크리스트 작성" },
+  { id: "monitor", label: "모니터링단", desc: "이행점검 및 결과 평가" },
+];
+
+const DEFAULT_CFG = {
+  planTitle: "제5기 대구광역시 지역사회보장계획 (2023–2026) · 2026년 연차별 시행계획",
+  asOf: "2026. 7. 31 기준",
+  periods: { ihaeng_gonggong: true, ihaeng_eval: true, gyeolgwa_gonggong: true, gyeolgwa_eval: true },
+  overrides: {}
+};
+
+const SCALE_SANG = [
+  { v: 3, l: "상", hint: "90% 이상" },
+  { v: 2, l: "중", hint: "70–90%" },
+  { v: 1, l: "하", hint: "70% 미만" },
+];
+
+const SCALE_5 = [
+  { v: 1, l: "매우 미흡", hint: "20% 미만" },
+  { v: 2, l: "미흡", hint: "20~39%" },
+  { v: 3, l: "보통", hint: "40~59%" },
+  { v: 4, l: "충실", hint: "60~79%" },
+  { v: 5, l: "매우 충실", hint: "80% 이상" },
+];
+
+const GENERAL_CHECK_ITEMS = [
+  { cat: "인지도", text: "시민들은 이 사업에 대해 잘 알고 있다" },
+  { cat: "인지도", text: "사업에 대한 홍보가 잘 이루어지고 있다" },
+  { cat: "적절성", text: "사업 취지와 목적에 맞게 잘 운영되고 있다" },
+  { cat: "적절성", text: "사업이 추진 일정에 맞게 잘 진행되고 있다" },
+  { cat: "적절성", text: "사업 예산 집행이 계획대로 잘 진행되고 있다" },
+  { cat: "적절성", text: "전반적으로 사업 내용과 절차가 적절하게 이루어지고 있다" },
+  { cat: "적절성", text: "사업의 적절한 성과지표가 설정되어 있다" },
+  { cat: "적절성", text: "사업 변경 내용이 적절하다" },
+  { cat: "민관협력", text: "사업 추진에 있어 공공, 구군, 민관기관과 연계 및 협력이 잘 이루어지고 있다" },
+  { cat: "민관협력", text: "계획 수립 및 추진 시 주민참여가 이루어진다" },
+  { cat: "민관협력", text: "지역사회 내 인적, 물적 자원을 원활하게 활용하고 있다" },
+  { cat: "중요성 및 효과성", text: "이 사업은 시민들의 문제나 욕구 해결에 필요하다" },
+  { cat: "중요성 및 효과성", text: "이 사업은 시민의 문제나 욕구 해결에 효과적이다" },
+];
+
+const CHECKLISTS = {
+  "gyeolgwa:monitor": {
+    scale: SCALE_SANG,
+    items: ["예산집행율", "성과목표(달성율)", "사업추진과정의 충실성", "우수사업 대상으로 적절성", "지속 추진 필요성", "구민 복지체감도 달성도"],
+    texts: ["전반적인 사업에 대한 평가(총평)"],
+  },
+};
+
+function Pill({ children, color }) {
+  return <span className="inline-block px-2 py-0.5 rounded-full text-xs font-semibold" style={{ background: `${color}1A`, color }}>{children}</span>;
+}
+function Field({ label, children, note }) {
+  return (
+    <div className="mb-4">
+      <label className="block text-sm font-semibold mb-1.5" style={{ color: C.ink }}>{label}</label>
+      {note ? <p className="text-xs mb-1.5" style={{ color: C.muted }}>{note}</p> : null}
+      {children}
+    </div>
+  );
+}
+function TA({ value, onChange, disabled, rows = 2, placeholder }) {
+  return <textarea rows={rows} value={value || ""} placeholder={placeholder} disabled={disabled}
+    onChange={(e) => onChange(e.target.value)} className="w-full rounded-md px-3 py-2 text-sm"
+    style={{ border: `1px solid ${C.line}`, background: disabled ? "#F3F1EA" : "#fff", color: C.ink, resize: "vertical" }} />;
+}
+function IN({ value, onChange, disabled, placeholder, type = "text", w }) {
+  return <input type={type} value={value ?? ""} placeholder={placeholder} disabled={disabled}
+    onChange={(e) => onChange(e.target.value)} className="rounded-md px-2.5 py-1.5 text-sm"
+    style={{ border: `1px solid ${C.line}`, background: disabled ? "#F3F1EA" : "#fff", color: C.ink, width: w || "100%" }} />;
+}
+function Segment({ scale, value, onChange, disabled }) {
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {scale.map((s) => {
+        const on = value === s.v;
+        return <button key={s.v} disabled={disabled} onClick={() => onChange(on ? null : s.v)}
+          className="px-3 py-1.5 rounded-md text-sm font-medium flex-1 text-center" title={s.hint || ""}
+          style={{ minWidth: 60, border: `1px solid ${on ? C.pine : C.line}`, background: on ? C.pine : C.surface, color: on ? "#fff" : C.ink, opacity: disabled ? 0.5 : 1, cursor: disabled ? "not-allowed" : "pointer" }}>
+          {s.l}{s.hint ? <span className="block text-[10px] font-normal opacity-85">{s.hint}</span> : null}
+        </button>;
+      })}
+    </div>
+  );
+}
+function SectionLabel({ n, t }) {
+  return (
+    <div className="flex items-center gap-2 mt-6 mb-3 pb-1.5" style={{ borderBottom: `2px solid ${C.pineSoft}` }}>
+      <span className="text-base font-bold" style={{ color: C.pine }}>{n}</span>
+      <h4 className="text-base font-bold" style={{ color: C.ink }}>{t}</h4>
+    </div>
+  );
+}
+function Note({ children }) {
+  return <div className="px-4 py-3 rounded-md text-sm" style={{ background: C.pineSoft, color: C.pineDark }}>{children}</div>;
+}
+function BackBtn({ onClick }) {
+  return <button onClick={onClick} className="text-sm font-semibold mb-3" style={{ color: C.pine }}>← 사업 목록</button>;
+}
+
+const pct = (num, den) => {
+  const n = parseFloat(num), d = parseFloat(den);
+  return d > 0 && !isNaN(n) ? ((n / d) * 100) : null;
+};
+const pctColor = (v) => v == null ? C.muted : v >= 90 ? C.ok : v >= 70 ? C.warn : C.bad;
+
+function LoginScreen({ onLogin }) {
+  const [selRole, setSelRole] = useState("gonggong");
+  const [pwd, setPwd] = useState("");
+  
+  const handleLogin = () => {
+    const pwds = { admin: "admin123", gonggong: "work123", monitor: "mon123" };
+    if (pwd === pwds[selRole]) {
+      onLogin(selRole);
+    } else {
+      alert("비밀번호가 일치하지 않습니다.");
+    }
+  };
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen" style={{ background: C.pineDark, fontFamily: "'Pretendard','Apple SD Gothic Neo','Malgun Gothic',-apple-system,sans-serif" }}>
+      <div className="p-8 bg-white rounded-lg shadow-xl w-full max-w-sm flex flex-col gap-5">
+        <div className="text-center">
+          <div className="text-xs font-semibold mb-1" style={{ color: C.pine }}>대구광역시 지역사회보장협의체</div>
+          <h1 className="text-xl font-bold" style={{ color: C.ink }}>온라인 모니터링 시스템</h1>
+        </div>
+        
+        <div className="flex flex-col gap-3 mt-2">
+          <div>
+            <label className="block text-sm font-semibold mb-1.5" style={{ color: C.ink }}>접속 권한</label>
+            <select value={selRole} onChange={(e) => setSelRole(e.target.value)} className="w-full p-2.5 border rounded-md text-sm outline-none" style={{ borderColor: C.line }}>
+              {ROLES.map(r => <option key={r.id} value={r.id}>{r.label}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-semibold mb-1.5" style={{ color: C.ink }}>비밀번호</label>
+            <input type="password" value={pwd} onChange={(e) => setPwd(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleLogin()} className="w-full p-2.5 border rounded-md text-sm outline-none" style={{ borderColor: C.line }} placeholder="비밀번호를 입력하세요" />
+          </div>
+          <button onClick={handleLogin} className="w-full py-2.5 mt-2 rounded-md text-white font-bold transition-colors" style={{ background: C.pine }}>
+            시스템 접속
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SummaryDashboard({ projects, evals, onOpen }) {
+  const [type, setType] = useState("ihaeng");
+
+  const sysStats = useMemo(() => {
+    let total = projects.length;
+    let submitted = 0;
+    let sumAch = 0, cntAch = 0;
+    let sumBdg = 0, sumSpd = 0;
+    let distA = { h:0, m:0, l:0, n:0 };
+    let distB = { h:0, m:0, l:0, n:0, nb:0 };
+    let att = [];
+    let stg = {};
+    
+    projects.forEach(p => {
+      let gData = evals[`${p.id}::${type}::gonggong::gonggong`];
+      let has = !!gData;
+      if (has) submitted++;
+      
+      let stKey = p.num.split('-').slice(0, 2).join('-');
+      let stName = STRATEGY_NAMES[stKey] || (`추진전략 ${stKey}`);
+      if (!stg[stKey]) stg[stKey] = { id: stKey, name: stName, cnt:0, sub:0, aS:0, aC:0, bS:0, sS:0 };
+      stg[stKey].cnt++;
+      if(has) stg[stKey].sub++;
+      
+      let aR = null;
+      let goal = parseFloat(p.goal);
+      if (has && !isNaN(goal) && goal > 0) {
+        let r = parseFloat(gData.result);
+        if (!isNaN(r)) {
+          aR = (r/goal)*100;
+          sumAch += Math.min(aR, 100);
+          cntAch++;
+          stg[stKey].aS += Math.min(aR, 100);
+          stg[stKey].aC++;
+        }
+      }
+      
+      let bR = null;
+      let nb = p.budget === "비예산" || !p.budget || p.budget == "0" || p.budget == 0;
+      if (!nb) {
+        let bdg = parseFloat(p.budget);
+        sumBdg += bdg;
+        stg[stKey].bS += bdg;
+        if (has) {
+          let spd = parseFloat(gData.spend);
+          if (!isNaN(spd)) {
+            bR = (spd/bdg)*100;
+            sumSpd += spd;
+            stg[stKey].sS += spd;
+          }
+        }
+      }
+      
+      if (!has || aR === null) distA.n++;
+      else if (aR >= 90) distA.h++;
+      else if (aR >= 70) distA.m++;
+      else distA.l++;
+      
+      if (nb) distB.nb++;
+      else if (!has || bR === null) distB.n++;
+      else if (bR >= 90) distB.h++;
+      else if (bR >= 70) distB.m++;
+      else distB.l++;
+      
+      if (has && ((aR !== null && aR < 70) || (bR !== null && bR < 70))) {
+        att.push({ ...p, aR, bR });
+      }
+    });
+    
+    const sortedStg = Object.values(stg).sort((a,b) => a.id.localeCompare(b.id));
+    return { total, submitted, avgA: cntAch?sumAch/cntAch:0, sumBdg, sumSpd, avgB: sumBdg? (sumSpd/sumBdg)*100 : 0, distA, distB, att, stg: sortedStg };
+  }, [projects, evals, type]);
+  
+  const nEval = Object.keys(evals).filter(k => k.includes(`::${type}::`) && !k.includes("gonggong::gonggong")).length;
+  const Bar = ({ w, c }) => <div className="h-3 rounded-full" style={{ width: `${Math.min(w,100)}%`, background: c }}></div>;
+  
+  return (
+    <div className="flex flex-col gap-5">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-2 gap-3">
+        <div>
+          <h2 className="text-2xl font-bold mb-1.5" style={{ color: C.ink }}>종합 대시보드</h2>
+          <p className="text-sm" style={{ color: C.muted }}>대구광역시 지역사회보장계획 · {type==='ihaeng' ? '이행점검' : '결과확인'} 현황</p>
+        </div>
+        <div className="flex border rounded-md overflow-hidden" style={{ borderColor: C.line }}>
+          <button onClick={()=>setType('ihaeng')} className={`px-4 py-2 text-sm font-bold transition-colors ${type==='ihaeng' ? 'bg-[#22574A] text-white' : 'bg-white text-[#6B7169]'}`}>이행점검</button>
+          <button onClick={()=>setType('gyeolgwa')} className={`px-4 py-2 text-sm font-bold transition-colors ${type==='gyeolgwa' ? 'bg-[#22574A] text-white' : 'bg-white text-[#6B7169]'}`}>결과확인</button>
+        </div>
+      </div>
+      
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <div className="p-4 rounded-lg border bg-white shadow-sm flex flex-col justify-center" style={{ borderColor: C.line }}>
+          <div className="text-xs font-semibold mb-1" style={{ color: C.muted }}>세부사업</div>
+          <div className="text-2xl font-bold" style={{ color: C.ink }}>{sysStats.total}개</div>
+        </div>
+        <div className="p-4 rounded-lg border bg-white shadow-sm flex flex-col justify-center" style={{ borderColor: C.line }}>
+          <div className="text-xs font-semibold mb-1" style={{ color: C.muted }}>공공 점검자료 제출</div>
+          <div className="text-2xl font-bold" style={{ color: '#005BAA' }}>{sysStats.submitted}<span className="text-base text-[#6B7169]">/{sysStats.total}</span></div>
+          <div className="text-[11px] mt-1 text-[#6B7169]">{Math.round((sysStats.submitted/sysStats.total)*100||0)}% 완료</div>
+        </div>
+        <div className="p-4 rounded-lg border bg-white shadow-sm flex flex-col justify-center" style={{ borderColor: C.line }}>
+          <div className="text-xs font-semibold mb-1" style={{ color: C.muted }}>평균 목표달성률</div>
+          <div className="text-2xl font-bold" style={{ color: '#B8860B' }}>{sysStats.avgA.toFixed(1)}%</div>
+          <div className="text-[11px] mt-1 text-[#6B7169]">100% 초과분은 100%로 산정</div>
+        </div>
+        <div className="p-4 rounded-lg border bg-white shadow-sm flex flex-col justify-center" style={{ borderColor: C.line }}>
+          <div className="text-xs font-semibold mb-1" style={{ color: C.muted }}>예산집행률(총액)</div>
+          <div className="text-2xl font-bold" style={{ color: '#B8860B' }}>{sysStats.avgB.toFixed(1)}%</div>
+          <div className="text-[11px] mt-1 text-[#6B7169]">예산 {sysStats.sumBdg.toLocaleString()} · 집행 {sysStats.sumSpd.toLocaleString()} 백만원</div>
+        </div>
+        <div className="p-4 rounded-lg border bg-white shadow-sm flex flex-col justify-center" style={{ borderColor: C.line }}>
+          <div className="text-xs font-semibold mb-1" style={{ color: C.muted }}>모니터링단 평가</div>
+          <div className="text-2xl font-bold" style={{ color: C.ink }}>{nEval}건</div>
+        </div>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div className="col-span-1 md:col-span-2 p-5 rounded-lg border bg-white shadow-sm" style={{ borderColor: C.line }}>
+          <div className="flex justify-between items-end mb-4">
+            <h3 className="font-bold text-sm" style={{ color: C.ink }}>추진전략 단위별 목표달성률·예산집행률</h3>
+            <div className="flex gap-3 text-xs" style={{ color: C.muted }}>
+              <span className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-sm bg-[#22574A]"></div>달성률</span>
+              <span className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-sm bg-[#4A88A8]"></div>집행률</span>
+            </div>
+          </div>
+          <div className="flex flex-col gap-6 mt-2">
+            {sysStats.stg.map(s => {
+              let aR = s.aC ? s.aS/s.aC : 0;
+              let bR = s.bS ? (s.sS/s.bS)*100 : 0;
+              return (
+                <div key={s.id}>
+                  <div className="flex justify-between items-end mb-2">
+                    <div className="text-sm font-bold" style={{ color: C.ink }}>
+                      <span className="px-1.5 py-0.5 rounded text-white text-xs mr-1.5 bg-[#22574A]">{s.id}</span>
+                      {s.name}
+                    </div>
+                    <div className="text-xs" style={{ color: C.muted }}>사업 {s.cnt} · 제출 {s.sub}</div>
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1 bg-gray-100 h-3 rounded-full overflow-hidden"><Bar w={aR} c="#22574A" /></div>
+                      <div className="w-10 text-right text-xs font-bold" style={{ color: "#22574A" }}>{aR.toFixed(1)}%</div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1 bg-gray-100 h-3 rounded-full overflow-hidden"><Bar w={bR} c="#4A88A8" /></div>
+                      <div className="w-10 text-right text-xs font-bold" style={{ color: "#4A88A8" }}>{bR.toFixed(1)}%</div>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+        
+        <div className="col-span-1 flex flex-col gap-5">
+          <div className="p-4 rounded-lg border bg-white shadow-sm" style={{ borderColor: C.line }}>
+            <h3 className="font-bold text-sm mb-4" style={{ color: C.ink }}>목표달성률 분포</h3>
+            <div className="flex flex-col gap-2.5 text-xs">
+              {[
+                { l: '90% 이상', v: sysStats.distA.h, c: '#22574A' },
+                { l: '70~90%', v: sysStats.distA.m, c: '#C49A29' },
+                { l: '70% 미만', v: sysStats.distA.l, c: '#C34B36' },
+                { l: '미제출', v: sysStats.distA.n, c: '#9FA69E' }
+              ].map(row => (
+                <div key={row.l} className="flex items-center gap-2">
+                  <div className="w-16" style={{ color: C.muted }}>{row.l}</div>
+                  <div className="flex-1 bg-gray-100 h-2.5 rounded-full overflow-hidden"><div className="h-full rounded-full transition-all" style={{ width:`${(row.v/sysStats.total)*100}%`, background:row.c }}></div></div>
+                  <div className="w-6 text-right font-bold" style={{ color: row.c }}>{row.v}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          <div className="p-4 rounded-lg border bg-white shadow-sm" style={{ borderColor: C.line }}>
+            <h3 className="font-bold text-sm mb-4" style={{ color: C.ink }}>예산집행률 분포</h3>
+            <div className="flex flex-col gap-2.5 text-xs">
+              {[
+                { l: '90% 이상', v: sysStats.distB.h, c: '#22574A' },
+                { l: '70~90%', v: sysStats.distB.m, c: '#C49A29' },
+                { l: '70% 미만', v: sysStats.distB.l, c: '#C34B36' },
+                { l: '미제출', v: sysStats.distB.n, c: '#9FA69E' },
+                { l: '비예산', v: sysStats.distB.nb, c: '#C2BEAF' }
+              ].map(row => (
+                <div key={row.l} className="flex items-center gap-2">
+                  <div className="w-16" style={{ color: C.muted }}>{row.l}</div>
+                  <div className="flex-1 bg-gray-100 h-2.5 rounded-full overflow-hidden"><div className="h-full rounded-full transition-all" style={{ width:`${(row.v/sysStats.total)*100}%`, background:row.c }}></div></div>
+                  <div className="w-6 text-right font-bold" style={{ color: row.c }}>{row.v}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          <div className="p-4 rounded-lg border bg-white shadow-sm flex-1 flex flex-col" style={{ borderColor: C.line }}>
+            <h3 className="font-bold text-sm mb-1" style={{ color: C.ink }}>관심 필요 사업 <span className="font-normal text-[11px] text-[#6B7169]">(달성률·집행률 70% 미만)</span></h3>
+            <div className="flex-1 overflow-y-auto mt-2 pr-1" style={{ maxHeight: 220 }}>
+              {sysStats.att.length === 0 ? <div className="text-xs text-[#6B7169] mt-2">해당 사업이 없습니다.</div> : sysStats.att.map(a => (
+                <div key={a.id} className="p-2.5 mb-2 border rounded text-xs bg-white cursor-pointer hover:bg-gray-50 transition-colors" onClick={()=>onOpen(a.id, type)} style={{ borderColor: C.line }}>
+                  <div className="font-bold text-[#1C201D] mb-1 truncate">{a.num} {a.name}</div>
+                  <div className="text-[#C34B36] font-semibold flex gap-2">
+                    {a.aR !== null && a.aR < 70 && <span>달성 {a.aR.toFixed(1)}%</span>}
+                    {a.bR !== null && a.bR < 70 && <span>집행 {a.bR.toFixed(1)}%</span>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ProjectInfoEdit({ p, disabled, onSave }) {
+  const [open, setOpen] = useState(false);
+  const [f, setF] = useState({});
+  const [note, setNote] = useState("");
+  useEffect(() => { setF({ dept: p.dept, team: p.team, officer: p.officer, goal: p.goal, unit: p.unit, budget: p.budget }); }, [p.id]);
+  const dirty = ["dept", "team", "officer", "goal", "unit", "budget"].some((k) => (f[k] ?? "") !== (p[k] ?? ""));
+  const save = () => {
+    if (!dirty) return;
+    onSave({ ...f, changeNote: note.trim() || "사유 미기재", changedAt: new Date().toISOString().slice(0, 10) });
+    setNote(""); setOpen(false);
+  };
+  return (
+    <div className="mb-5 rounded-md" style={{ border: `1px dashed ${C.gold}`, background: "#FDFBF4" }}>
+      <button onClick={() => setOpen(!open)} className="w-full flex items-center justify-between px-4 py-2.5 text-sm font-bold" style={{ color: C.gold }}>
+        <span>사업정보 수정 — 추경에 따른 예산·목표 변경, 담당 변경 시</span>
+        <span>{open ? "닫기 ▲" : "열기 ▼"}</span>
+      </button>
+      {p.changedAt && !open && (
+        <div className="px-4 pb-2 text-xs" style={{ color: C.muted }}>최근 변경 {p.changedAt} · {p.changeNote}</div>
+      )}
+      {open && (
+        <div className="px-4 pb-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
+            <Field label="담당과"><IN value={f.dept} onChange={(v) => setF({ ...f, dept: v })} disabled={disabled} /></Field>
+            <Field label="담당팀"><IN value={f.team} onChange={(v) => setF({ ...f, team: v })} disabled={disabled} /></Field>
+            <Field label="담당자(연락처)"><IN value={f.officer} onChange={(v) => setF({ ...f, officer: v })} disabled={disabled} /></Field>
+            <Field label="성과 목표값"><IN value={f.goal} onChange={(v) => setF({ ...f, goal: v })} disabled={disabled} /></Field>
+            <Field label="단위"><IN value={f.unit} onChange={(v) => setF({ ...f, unit: v })} disabled={disabled} /></Field>
+            <Field label="예산(백만원)" note="비예산 사업은 '비예산' 입력"><IN value={f.budget} onChange={(v) => setF({ ...f, budget: v })} disabled={disabled} /></Field>
+          </div>
+          <Field label="변경 사유" note="예: 제1회 추가경정예산 반영(예산 50→45), 조직개편에 따른 담당 변경 등">
+            <IN value={note} onChange={setNote} disabled={disabled} placeholder="변경 사유를 기재하세요" />
+          </Field>
+          <div className="flex gap-2">
+            <button onClick={save} disabled={disabled || !dirty} className="px-4 py-2 rounded-md text-sm font-bold text-white"
+              style={{ background: disabled || !dirty ? C.muted : C.gold, cursor: disabled || !dirty ? "not-allowed" : "pointer" }}>변경 저장</button>
+            <button onClick={() => { setF({ dept: p.dept, team: p.team, officer: p.officer, goal: p.goal, unit: p.unit, budget: p.budget }); setNote(""); }}
+              className="px-4 py-2 rounded-md text-sm font-semibold" style={{ border: `1px solid ${C.line}`, color: C.ink }}>되돌리기</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Dashboard({ projects, evals, onOpen }) {
+  const [q, setQ] = useState("");
+  const [sys, setSys] = useState("all");
+  const list = projects.filter((p) =>
+    (sys === "all" || p.sys === sys) &&
+    (q.trim() === "" || (p.name + p.num + p.dept + p.officer).includes(q.trim())));
+
+  const cellOf = (pid, type) => {
+    const g = evals[`${pid}::${type}::gonggong::gonggong`];
+    const p = projects.find((x) => x.id === pid);
+    const a = g ? pct(g.result, p.goal) : null;
+    const b = g && p.budget !== "비예산" ? pct(g.spend, p.budget) : null;
+    const nEval = ["monitor"].reduce((acc, grp) =>
+      acc + Object.keys(evals).filter((k) => k.startsWith(`${pid}::${type}::${grp}::`)).length, 0);
+    return { a, b, nEval, filled: !!g };
+  };
+
+  const filledCount = list.filter((p) => cellOf(p.id, "ihaeng").filled).length;
+
+  return (
+    <div>
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+        <div>
+          <h2 className="text-lg font-bold" style={{ color: C.ink }}>사업별 모니터링 현황</h2>
+          <p className="text-sm" style={{ color: C.muted }}>이행점검 공공입력 {filledCount}/{list.length} 건</p>
+        </div>
+        <div className="flex gap-2">
+          <select value={sys} onChange={(e) => setSys(e.target.value)} className="rounded-md px-2 py-1.5 text-sm" style={{ border: `1px solid ${C.line}` }}>
+            <option value="all">전체 전략체계</option>
+            <option value="Ⅰ">전략체계 Ⅰ</option>
+            <option value="Ⅱ">전략체계 Ⅱ</option>
+          </select>
+          <IN value={q} onChange={setQ} placeholder="사업명·부서·담당자 검색" w={220} />
+        </div>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm" style={{ borderCollapse: "collapse", minWidth: 760 }}>
+          <thead>
+            <tr style={{ background: C.pineSoft }}>
+              {["과제번호", "사업명 / 담당", "목표(지표)", "추진율", "집행율", "평가", "입력"].map((h) => (
+                <th key={h} className="text-left px-3 py-2 whitespace-nowrap" style={{ color: C.pineDark }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {list.map((p) => {
+              const ci = cellOf(p.id, "ihaeng");
+              return (
+                <tr key={p.id} style={{ borderBottom: `1px solid ${C.line}` }}>
+                  <td className="px-3 py-2 font-mono text-xs whitespace-nowrap">{p.num}{p.key && <div><Pill color={C.gold}>중점</Pill></div>}{p.changedAt && <div title={p.changeNote}><Pill color={C.ihaeng}>변경</Pill></div>}</td>
+                  <td className="px-3 py-2">
+                    <div className="font-semibold" style={{ color: C.ink }}>{p.name}</div>
+                    <div className="text-xs" style={{ color: C.muted }}>{p.dept} · {p.team} · {p.officer}</div>
+                  </td>
+                  <td className="px-3 py-2 text-xs" style={{ color: C.muted, maxWidth: 180 }}>
+                    <div className="font-semibold" style={{ color: C.ink }}>{p.goal} {p.unit}</div>
+                    <div className="truncate" title={p.kpi}>{p.kpi}</div>
+                  </td>
+                  <td className="px-3 py-2 font-bold whitespace-nowrap" style={{ color: pctColor(ci.a) }}>{ci.a != null ? ci.a.toFixed(0) + "%" : "—"}</td>
+                  <td className="px-3 py-2 font-bold whitespace-nowrap" style={{ color: pctColor(ci.b) }}>
+                    {p.budget === "비예산" ? <span className="text-xs font-normal" style={{ color: C.muted }}>비예산</span> : ci.b != null ? ci.b.toFixed(0) + "%" : "—"}
+                  </td>
+                  <td className="px-3 py-2 text-xs whitespace-nowrap" style={{ color: C.muted }}>{ci.nEval}건</td>
+                  <td className="px-3 py-2 whitespace-nowrap">
+                    <button onClick={() => onOpen(p.id, "ihaeng")} className="px-2.5 py-1 rounded text-xs font-bold text-white mr-1" style={{ background: C.ihaeng }}>이행</button>
+                    <button onClick={() => onOpen(p.id, "gyeolgwa")} className="px-2.5 py-1 rounded text-xs font-bold text-white" style={{ background: C.gyeolgwa }}>결과</button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function SeoguChecklist({ p, data, set, disabled, asOf }) {
+  const d = data || {};
+  const u = (k, v) => set({ ...d, [k]: v });
+  const achieve = pct(d.result, p.goal);
+  const noBudget = p.budget === "비예산" || p.budget === "" || p.budget === "-";
+  const execRate = noBudget ? null : pct(d.spend, p.budget);
+
+  return (
+    <div>
+      <SectionLabel n="1" t="사업구분 (추진점검표 요약)" />
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-2 text-sm rounded-md p-3.5" style={{ background: "#FAF9F4", border: `1px solid ${C.line}` }}>
+        <div><span style={{ color: C.muted }}>과제번호</span><div className="font-semibold font-mono">{p.num}</div></div>
+        <div className="col-span-2 md:col-span-3"><span style={{ color: C.muted }}>세부사업명</span><div className="font-semibold">{p.name}</div></div>
+        <div><span style={{ color: C.muted }}>담당과</span><div>{p.dept}</div></div>
+        <div><span style={{ color: C.muted }}>담당팀</span><div>{p.team}</div></div>
+        <div className="col-span-2"><span style={{ color: C.muted }}>담당자</span><div>{p.officer}</div></div>
+        <div className="col-span-2 md:col-span-3"><span style={{ color: C.muted }}>성과지표</span><div>{p.kpi}</div></div>
+        <div><span style={{ color: C.muted }}>목표값</span><div className="font-semibold">{p.goal} {p.unit}</div></div>
+        <div><span style={{ color: C.muted }}>2026 예산(백만원)</span><div className="font-semibold">{noBudget ? "비예산" : p.budget}</div></div>
+      </div>
+
+      <SectionLabel n="2" t="사업 유형 분류" />
+      <div className="rounded-md p-3 mb-4" style={{ border: `1px solid ${C.line}`, background: "#FAF9F4" }}>
+        <table className="w-full text-sm" style={{ borderCollapse: "collapse" }}>
+          <thead>
+            <tr style={{ borderBottom: `1px solid ${C.line}` }}>
+              <th className="text-left py-1.5 font-semibold" style={{ color: C.pineDark }}>사업유형</th>
+              <th className="text-center py-1.5 font-semibold w-24" style={{ color: C.pineDark }}>해당</th>
+              <th className="text-center py-1.5 font-semibold w-24" style={{ color: C.pineDark }}>비해당</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[
+              { key: 'type_key', label: '중점추진사업' },
+              { key: 'type_coop', label: '민관협력사업' },
+              { key: 'type_bal', label: '균형발전사업' },
+            ].map((row) => (
+              <tr key={row.key} style={{ borderBottom: `1px dashed ${C.line}` }}>
+                <td className="py-2 font-medium" style={{ color: C.ink }}>{row.label}</td>
+                <td className="text-center py-2">
+                  <input type="radio" name={row.key} checked={d[row.key] === '해당'} onChange={() => u(row.key, '해당')} disabled={disabled} style={{ cursor: disabled ? 'not-allowed' : 'pointer', width: 16, height: 16 }} />
+                </td>
+                <td className="text-center py-2">
+                  <input type="radio" name={row.key} checked={d[row.key] === '비해당'} onChange={() => u(row.key, '비해당')} disabled={disabled} style={{ cursor: disabled ? 'not-allowed' : 'pointer', width: 16, height: 16 }} />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <SectionLabel n="3" t={`체크리스트 (${asOf})`} />
+      <div className="rounded-md p-4 mb-4" style={{ border: `1px solid ${C.line}` }}>
+        <div className="text-sm font-bold mb-2" style={{ color: C.ihaeng }}>1) 계획 대비 사업계획 이행 정도</div>
+        <div className="mb-3">
+          <Segment scale={SCALE_5} value={d.deg_plan} onChange={(v) => u("deg_plan", v)} disabled={disabled} />
+        </div>
+        {(d.deg_plan === 1 || d.deg_plan === 2) && (
+          <div className="mb-3 p-3 rounded" style={{ background: "#FFF5F5", border: `1px solid ${C.bad}` }}>
+            <label className="block text-xs font-semibold mb-1" style={{ color: C.bad }}>[사업계획 이행 정도가 40% 미만인 이유]</label>
+            <TA value={d.reason_plan} onChange={(v) => u("reason_plan", v)} disabled={disabled} placeholder="부진 사유를 상세히 입력하세요" rows={2} />
+          </div>
+        )}
+        <div className="flex items-center gap-2 mt-2 text-sm pt-2" style={{ borderTop: `1px dashed ${C.line}` }}>
+          <span style={{ color: C.muted }}>성과지표 추진실적 ({p.unit || "값"}) [목표: {p.goal}]</span>
+          <IN type="number" value={d.result} onChange={(v) => u("result", v)} disabled={disabled} w={110} />
+          <span style={{ color: C.muted }}>→ 추진율:</span>
+          <span className="font-bold" style={{ color: pctColor(achieve) }}>{achieve != null ? achieve.toFixed(1) + " %" : "—"}</span>
+        </div>
+      </div>
+
+      <div className="rounded-md p-4 mb-4" style={{ border: `1px solid ${C.line}` }}>
+        <div className="text-sm font-bold mb-2" style={{ color: C.ihaeng }}>2) 사업예산 사용 이행</div>
+        {noBudget ? (
+          <div className="text-sm" style={{ color: C.muted }}>비예산 사업 — 해당 없음</div>
+        ) : (
+          <>
+            <div className="mb-3">
+              <Segment scale={SCALE_5} value={d.deg_budget} onChange={(v) => u("deg_budget", v)} disabled={disabled} />
+            </div>
+            {(d.deg_budget === 1 || d.deg_budget === 2) && (
+              <div className="mb-3 p-3 rounded" style={{ background: "#FFF5F5", border: `1px solid ${C.bad}` }}>
+                <label className="block text-xs font-semibold mb-1" style={{ color: C.bad }}>[사업예산 사용 이행이 40% 미만인 이유]</label>
+                <TA value={d.reason_budget} onChange={(v) => u("reason_budget", v)} disabled={disabled} placeholder="예산 집행 부진 사유를 상세히 입력하세요" rows={2} />
+              </div>
+            )}
+            <div className="flex items-center gap-2 mt-2 text-sm flex-wrap pt-2" style={{ borderTop: `1px dashed ${C.line}` }}>
+              <span style={{ color: C.muted }}>실제 집행액 (백만원) [예산: {p.budget}]</span>
+              <IN type="number" value={d.spend} onChange={(v) => u("spend", v)} disabled={disabled} w={110} />
+              <span style={{ color: C.muted }}>→ 집행율:</span>
+              <span className="font-bold" style={{ color: pctColor(execRate) }}>{execRate != null ? execRate.toFixed(1) + " %" : "—"}</span>
+            </div>
+          </>
+        )}
+      </div>
+
+      <div className="rounded-md p-4 mb-4" style={{ border: `1px solid ${C.line}` }}>
+        <div className="text-sm font-bold mb-3" style={{ color: C.ihaeng }}>3) 사업 관련 전반적인 점검 사항</div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm" style={{ borderCollapse: "collapse", minWidth: 600 }}>
+            <thead>
+              <tr style={{ borderBottom: `1px solid ${C.line}`, background: C.pineSoft }}>
+                <th className="text-center py-2 px-2 font-semibold w-20" style={{ color: C.pineDark }}>구분</th>
+                <th className="text-left py-2 px-3 font-semibold" style={{ color: C.pineDark }}>내용</th>
+                {["전혀\n그렇지 않다", "그렇지\n않다", "보통\n이다", "그렇다", "매우\n그렇다"].map((scaleText, sIdx) => (
+                  <th key={sIdx} className="text-center py-2 px-1 font-semibold text-xs whitespace-pre-line w-16" style={{ color: C.pineDark }}>{scaleText}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {GENERAL_CHECK_ITEMS.map((item, i) => (
+                <tr key={i} style={{ borderBottom: `1px dashed ${C.line}` }}>
+                  <td className="text-center py-2 px-2 font-semibold text-xs" style={{ color: C.ihaeng, borderRight: `1px solid ${C.line}` }}>
+                    {item.cat}
+                  </td>
+                  <td className="py-2 px-3 text-xs" style={{ color: C.ink }}>{item.text}</td>
+                  {[1, 2, 3, 4, 5].map((val) => (
+                    <td key={val} className="text-center py-2 px-1">
+                      <input 
+                        type="radio" 
+                        name={"gen_" + i} 
+                        checked={d["gen_" + i] === val} 
+                        onChange={() => u("gen_" + i, val)} 
+                        disabled={disabled}
+                        style={{ cursor: disabled ? 'not-allowed' : 'pointer', width: 16, height: 16 }}
+                      />
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <SectionLabel n="4" t="사업계획 변경 (변경 여부 / 변경 필요 여부)" />
+      <div className="rounded-md p-4 mb-4" style={{ border: `1px solid ${C.line}`, background: "#FAF9F4" }}>
+        <div className="text-sm font-bold mb-3" style={{ color: C.ihaeng }}>변경 필요 영역 선택 및 구체적 내용 기입</div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 mb-3 p-3 bg-white rounded border" style={{ borderColor: C.line }}>
+          {[
+            { key: 'ch_goal', label: '목표' },
+            { key: 'ch_kpi', label: '성과지표' },
+            { key: 'ch_budget', label: '예산' },
+            { key: 'ch_content', label: '사업내용' },
+            { key: 'ch_method', label: '수행방법' },
+            { key: 'ch_etc', label: '기타' },
+          ].map((item) => (
+            <label key={item.key} className="flex items-center gap-1.5 text-sm font-medium cursor-pointer">
+              <input 
+                type="checkbox" 
+                checked={!!d[item.key]} 
+                onChange={(e) => u(item.key, e.target.checked)} 
+                disabled={disabled}
+                style={{ width: 16, height: 16 }}
+              />
+              {item.label}
+            </label>
+          ))}
+        </div>
+        <div>
+          <label className="block text-xs font-semibold mb-1" style={{ color: C.muted }}>[변경이 필요한(할) 경우, 구체적 내용 기입]</label>
+          <TA value={d.ch_detail} onChange={(v) => u("ch_detail", v)} disabled={disabled} placeholder="구체적인 변경 내용을 입력하세요" rows={3} />
+        </div>
+      </div>
+
+      <SectionLabel n="5" t="작성자 의견 (실적·애로사항·개선사항)" />
+      <Field label="사업 주요 실적 (목표와 관련 있는 내용 작성)">
+        <TA value={d.op_perf} onChange={(v) => u("op_perf", v)} disabled={disabled} rows={3} placeholder="목표와 관련 있는 주요 실적 내용을 작성하세요" />
+      </Field>
+      <Field label="사업 운영 애로사항 및 어려움">
+        <TA value={d.op_diff} onChange={(v) => u("op_diff", v)} disabled={disabled} rows={3} placeholder="사업 운영 시 겪은 애로사항 및 어려움을 작성하세요" />
+      </Field>
+      <Field label="개선 사항 및 기타 의견">
+        <TA value={d.op_improve} onChange={(v) => u("op_improve", v)} disabled={disabled} rows={3} placeholder="향후 개선 사항 및 기타 의견을 작성하세요" />
+      </Field>
+    </div>
+  );
+}
+
+function GonggongReadOnly({ p, data, asOf, type }) {
+  const d = data || {};
+  const achieve = pct(d.result, p.goal);
+  const noBudget = p.budget === "비예산" || p.budget === "" || p.budget === "-";
+  const execRate = noBudget ? null : pct(d.spend, p.budget);
+
+  const scaleLabel = (val) => {
+    const f = SCALE_5.find(s => s.v === val);
+    return f ? f.l : "미입력";
+  };
+
+  if (!data) {
+    return <div className="py-10 text-center text-sm" style={{ color: C.muted }}>담당자가 아직 점검자료를 제출하지 않았습니다.</div>;
+  }
+
+  return (
+    <div className="text-sm space-y-6" style={{ color: C.ink }}>
+      <div>
+        <h4 className="font-bold mb-2.5 pb-1" style={{ color: C.pine, borderBottom: `2px solid ${C.pineSoft}` }}>사업개요</h4>
+        <div className="grid grid-cols-2 gap-y-3 gap-x-4 text-[13px]">
+           <div><span className="block mb-0.5" style={{ color: C.muted }}>과제번호</span><span className="font-semibold font-mono">{p.num}</span></div>
+           <div><span className="block mb-0.5" style={{ color: C.muted }}>담당</span>{p.dept} · {p.team}</div>
+           <div><span className="block mb-0.5" style={{ color: C.muted }}>성과지표</span>{p.kpi}</div>
+           <div><span className="block mb-0.5" style={{ color: C.muted }}>목표</span><span className="font-semibold">{p.goal} {p.unit}</span></div>
+           <div><span className="block mb-0.5" style={{ color: C.muted }}>2026 예산(백만원)</span><span className="font-semibold">{noBudget ? "비예산" : p.budget}</span></div>
+           <div><span className="block mb-0.5" style={{ color: C.muted }}>담당자</span>{p.officer}</div>
+        </div>
+      </div>
+      
+      {type === "ihaeng" ? (
+        <div>
+          <h4 className="font-bold mb-2.5 pb-1" style={{ color: C.pine, borderBottom: `2px solid ${C.pineSoft}` }}>이행상황 점검 결과</h4>
+          <div className="grid grid-cols-2 gap-y-4 gap-x-4 text-[13px]">
+            <div><span className="block mb-0.5" style={{ color: C.muted }}>계획 이행 정도</span>{scaleLabel(d.deg_plan)}</div>
+            <div><span className="block mb-0.5" style={{ color: C.muted }}>예산 사용 이행</span>{scaleLabel(d.deg_budget)}</div>
+            <div>
+              <span className="block mb-0.5" style={{ color: C.muted }}>추진실적 → 달성률</span>
+              <span className="font-bold text-[14px]">{d.result || 0} <span className="font-normal text-xs">{p.unit}</span> → <span style={{color: pctColor(achieve)}}>{achieve != null ? achieve.toFixed(1) + "%" : "-"}</span></span>
+            </div>
+            <div>
+              <span className="block mb-0.5" style={{ color: C.muted }}>집행액 → 집행률</span>
+              <span className="font-bold text-[14px]">{noBudget ? "비예산" : `${d.spend || 0} `}<span className="font-normal text-xs">{noBudget?"":"백만원"}</span> {noBudget ? "" : "→ "} <span style={{color: pctColor(execRate)}}>{execRate != null ? execRate.toFixed(1) + "%" : (noBudget ? "" : "-")}</span></span>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div>
+          <h4 className="font-bold mb-2.5 pb-1" style={{ color: C.pine, borderBottom: `2px solid ${C.pineSoft}` }}>결과확인 현황</h4>
+          <div className="grid grid-cols-2 gap-y-4 gap-x-4 text-[13px] mb-4">
+            <div>
+              <span className="block mb-0.5" style={{ color: C.muted }}>추진실적 → 달성률</span>
+              <span className="font-bold text-[14px]">{d.result || 0} <span className="font-normal text-xs">{p.unit}</span> → <span style={{color: pctColor(achieve)}}>{achieve != null ? achieve.toFixed(1) + "%" : "-"}</span></span>
+            </div>
+            <div>
+              <span className="block mb-0.5" style={{ color: C.muted }}>집행액 → 집행률</span>
+              <span className="font-bold text-[14px]">{noBudget ? "비예산" : `${d.spend || 0} `}<span className="font-normal text-xs">{noBudget?"":"백만원"}</span> {noBudget ? "" : "→ "} <span style={{color: pctColor(execRate)}}>{execRate != null ? execRate.toFixed(1) + "%" : (noBudget ? "" : "-")}</span></span>
+            </div>
+          </div>
+          <div>
+            <span className="block mb-1 text-[13px]" style={{ color: C.muted }}>주요 추진내용</span>
+            <div className="p-2.5 rounded text-[13px] leading-relaxed border bg-white whitespace-pre-wrap" style={{ borderColor: C.line }}>{d.g4 || "미입력"}</div>
+          </div>
+        </div>
+      )}
+
+      {type === "ihaeng" && (
+        <div>
+          <h4 className="font-bold mb-2.5 pb-1" style={{ color: C.pine, borderBottom: `2px solid ${C.pineSoft}` }}>사업계획 변경</h4>
+          <div className="p-2.5 rounded text-[13px] border bg-white" style={{ borderColor: C.line }}>
+            <span className="block mb-1" style={{ color: C.muted }}>변경 필요 영역</span>
+            <div className="font-medium mb-3">
+              {['ch_goal', 'ch_kpi', 'ch_budget', 'ch_content', 'ch_method', 'ch_etc'].filter(k => d[k]).map(k => ({ch_goal:'목표', ch_kpi:'성과지표', ch_budget:'예산', ch_content:'사업내용', ch_method:'수행방법', ch_etc:'기타'}[k])).join(', ') || "없음"}
+            </div>
+            <span className="block mb-1" style={{ color: C.muted }}>구체적 내용</span>
+            <div className="whitespace-pre-wrap leading-relaxed">{d.ch_detail || "미입력"}</div>
+          </div>
+        </div>
+      )}
+
+      {type === "ihaeng" && (
+        <div>
+          <h4 className="font-bold mb-2.5 pb-1" style={{ color: C.pine, borderBottom: `2px solid ${C.pineSoft}` }}>작성자 의견</h4>
+          <div className="space-y-3 text-[13px]">
+            <div><span className="block mb-1" style={{ color: C.muted }}>사업 주요 실적</span><div className="p-2.5 rounded leading-relaxed border bg-white whitespace-pre-wrap" style={{ borderColor: C.line }}>{d.op_perf || "미입력"}</div></div>
+            <div><span className="block mb-1" style={{ color: C.muted }}>사업 운영 애로사항</span><div className="p-2.5 rounded leading-relaxed border bg-white whitespace-pre-wrap" style={{ borderColor: C.line }}>{d.op_diff || "미입력"}</div></div>
+            <div><span className="block mb-1" style={{ color: C.muted }}>개선 사항 및 기타 의견</span><div className="p-2.5 rounded leading-relaxed border bg-white whitespace-pre-wrap" style={{ borderColor: C.line }}>{d.op_improve || "미입력"}</div></div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MonitorChecklistForm({ p, data, set, disabled }) {
+  const d = data || {};
+  const u = (k, v) => set({ ...d, [k]: v });
+
+  return (
+    <div>
+      <div className="mb-4">
+        <label className="block text-sm font-semibold mb-2" style={{ color: C.ink }}>사업계획 이행 정도</label>
+        <Segment scale={SCALE_5} value={d.m_deg_plan} onChange={(v) => u("m_deg_plan", v)} disabled={disabled} />
+      </div>
+
+      <div className="mb-6">
+        <label className="block text-sm font-semibold mb-2" style={{ color: C.ink }}>사업예산 사용 이행</label>
+        <Segment scale={SCALE_5} value={d.m_deg_budget} onChange={(v) => u("m_deg_budget", v)} disabled={disabled} />
+      </div>
+
+      <div className="mb-6">
+        <label className="block text-sm font-semibold mb-3" style={{ color: C.ink }}>사업 관련 전반적인 점검 사항 (모니터링단 평가)</label>
+        <div className="flex flex-col gap-3">
+          {GENERAL_CHECK_ITEMS.map((item, i) => (
+            <div key={i} className="p-3 rounded-md bg-white border" style={{ borderColor: C.line }}>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div className="text-sm">
+                  <span className="font-bold mr-1.5" style={{ color: C.pine }}>[{item.cat}]</span>
+                  <span style={{ color: C.ink }}>{item.text}</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  {[1, 2, 3, 4, 5].map((val) => (
+                    <button key={val} disabled={disabled} onClick={() => u("m_gen_" + i, d["m_gen_" + i] === val ? null : val)}
+                      className="w-8 h-8 rounded text-sm font-medium transition-colors"
+                      style={{ border: `1px solid ${d["m_gen_" + i] === val ? C.pine : C.line}`, background: d["m_gen_" + i] === val ? C.pine : "#fff", color: d["m_gen_" + i] === val ? "#fff" : C.ink, opacity: disabled ? 0.5 : 1, cursor: disabled ? "not-allowed" : "pointer" }}>
+                      {val}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <Field label="모니터링단 종합 의견 및 제언">
+        <TA value={d.m_opinion} onChange={(v) => u("m_opinion", v)} disabled={disabled} rows={5} placeholder="본 사업의 이행 상황에 대한 총평, 우수한 점, 개선할 점 등을 자유롭게 작성해 주세요." />
+      </Field>
+    </div>
+  );
+}
+
+function GyeolgwaGonggong({ p, data, set, disabled }) {
+  const d = data || {};
+  const u = (k, v) => set({ ...d, [k]: v });
+  const achieve = pct(d.result, p.goal);
+  const noBudget = p.budget === "비예산" || p.budget === "" || p.budget === "-";
+  const execRate = noBudget ? null : pct(d.spend, p.budget);
+  return (
+    <div>
+      <SectionLabel n="①" t="성과목표 현황 (12월말 기준)" />
+      <div className="flex items-center gap-2 text-sm mb-4">
+        <span style={{ color: C.muted }}>추진실적</span>
+        <IN type="number" value={d.result} onChange={(v) => u("result", v)} disabled={disabled} w={110} />
+        <span style={{ color: C.muted }}>→ 달성률</span>
+        <span className="font-bold" style={{ color: pctColor(achieve) }}>{achieve != null ? achieve.toFixed(1) + " %" : "—"}</span>
+      </div>
+      <SectionLabel n="②" t="예산집행 현황 (12월말 기준, 백만원)" />
+      {noBudget ? <p className="text-sm mb-4" style={{ color: C.muted }}>비예산 사업 — 해당 없음</p> : (
+        <div className="flex items-center gap-2 text-sm mb-4">
+          <span style={{ color: C.muted }}>· 집행액</span>
+          <IN type="number" value={d.spend} onChange={(v) => u("spend", v)} disabled={disabled} w={110} />
+          <span style={{ color: C.muted }}>→ 집행률</span>
+          <span className="font-bold" style={{ color: pctColor(execRate) }}>{execRate != null ? execRate.toFixed(1) + " %" : "—"}</span>
+        </div>
+      )}
+      <SectionLabel n="③" t="추진상황" />
+      <Field label="1) 주요 추진내용"><TA value={d.g4} onChange={(v) => u("g4", v)} disabled={disabled} /></Field>
+    </div>
+  );
+}
+
+function ChecklistForm({ schemaKey, data, set, disabled }) {
+  const s = CHECKLISTS[schemaKey] || CHECKLISTS["gyeolgwa:monitor"];
+  const d = data || {};
+  const u = (k, v) => set({ ...d, [k]: v });
+  return (
+    <div>
+      {s.items.map((it, i) => (
+        <div key={i} className="mb-4">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+            <span className="text-sm font-semibold" style={{ color: C.ink }}>{it}</span>
+            <Segment scale={s.scale} value={d["it_" + i]} onChange={(v) => u("it_" + i, v)} disabled={disabled} />
+          </div>
+        </div>
+      ))}
+      {s.texts.map((t, i) => (
+        <Field key={"t" + i} label={t}><TA value={d["tx_" + i]} onChange={(v) => u("tx_" + i, v)} disabled={disabled} rows={4} placeholder="해당 사업에 대한 총평을 자유롭게 기재해주세요." /></Field>
+      ))}
+    </div>
+  );
+}
+
+function MonitorView({ projects, cfg, role, roleObj, me, setMe, sel, setSel, groupOfRole, periodOpen, evals, saveEvals, saveOverride }) {
+  const [draft, setDraft] = useState(null);
+  const project = sel && projects.find((p) => p.id === sel.pid);
+  const needName = groupOfRole && groupOfRole !== "gonggong";
+  const key = sel && groupOfRole ? `${sel.pid}::${sel.type}::${groupOfRole}::${groupOfRole === "gonggong" ? "gonggong" : (me.trim() || "익명")}` : null;
+
+  useEffect(() => { setDraft(key ? (evals[key] || {}) : null); }, [key]);
+
+  if (!sel) {
+    return (
+      <div>
+        <h2 className="text-lg font-bold mb-2" style={{ color: C.ink }}>모니터링할 사업 선택</h2>
+        <p className="text-sm mb-4" style={{ color: C.muted }}>대시보드에서 사업 행의 <b>이행</b>/<b>결과</b> 버튼으로 진입해도 됩니다.</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2" style={{ maxHeight: 420, overflowY: "auto" }}>
+          {projects.map((p) => (
+            <div key={p.id} className="flex items-center justify-between rounded-md p-2.5" style={{ border: `1px solid ${C.line}` }}>
+              <div className="min-w-0 pr-2">
+                <div className="text-xs font-mono" style={{ color: C.muted }}>{p.num}</div>
+                <div className="text-sm font-semibold truncate" style={{ color: C.ink }}>{p.name}</div>
+              </div>
+              <div className="shrink-0">
+                <button onClick={() => setSel({ pid: p.id, type: "ihaeng" })} className="px-2 py-1 rounded text-xs font-bold text-white mr-1" style={{ background: C.ihaeng }}>이행</button>
+                <button onClick={() => setSel({ pid: p.id, type: "gyeolgwa" })} className="px-2 py-1 rounded text-xs font-bold text-white" style={{ background: C.gyeolgwa }}>결과</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  const open = periodOpen(sel.type, groupOfRole);
+  const disabled = !open;
+
+  const handleSave = async () => {
+    const d = draft || {};
+    const noBudget = project.budget === "비예산" || !project.budget || project.budget === "-" || parseFloat(project.budget) === 0;
+
+    const checkGen = (prefix, count) => {
+      for(let i=0; i<count; i++) if (!d[`${prefix}_${i}`]) return false;
+      return true;
+    };
+
+    let valid = true;
+
+    if (groupOfRole === "gonggong") {
+      if (sel.type === "ihaeng") {
+        if (!d.type_key || !d.type_coop || !d.type_bal) valid = false;
+        else if (!d.deg_plan) valid = false;
+        else if ((d.deg_plan === 1 || d.deg_plan === 2) && !(d.reason_plan || "").trim()) valid = false;
+        else if (d.result === undefined || d.result === "") valid = false;
+        else if (!noBudget && !d.deg_budget) valid = false;
+        else if (!noBudget && (d.deg_budget === 1 || d.deg_budget === 2) && !(d.reason_budget || "").trim()) valid = false;
+        else if (!noBudget && (d.spend === undefined || d.spend === "")) valid = false;
+        else if (!checkGen("gen", 13)) valid = false;
+        else {
+          const hasCh = ['ch_goal', 'ch_kpi', 'ch_budget', 'ch_content', 'ch_method', 'ch_etc'].some(k => d[k]);
+          if (hasCh && !(d.ch_detail || "").trim()) valid = false;
+          else if (!(d.op_perf || "").trim() || !(d.op_diff || "").trim() || !(d.op_improve || "").trim()) valid = false;
+        }
+      } else {
+        if (d.result === undefined || d.result === "") valid = false;
+        else if (!noBudget && (d.spend === undefined || d.spend === "")) valid = false;
+        else if (!(d.g4 || "").trim()) valid = false;
+      }
+    } else {
+      if (sel.type === "ihaeng") {
+        if (!d.m_deg_plan || !d.m_deg_budget) valid = false;
+        else if (!checkGen("m_gen", 13)) valid = false;
+        else if (!(d.m_opinion || "").trim()) valid = false;
+      } else {
+        if (!checkGen("it", 6)) valid = false;
+        else if (!(d.tx_0 || "").trim()) valid = false;
+      }
+    }
+
+    if (!valid) {
+      alert("입력되지 않은 항목이 있습니다. 모든 빈칸을 확인해주세요.");
+      return;
+    }
+
+    await saveEvals(key, { ...draft, _updated: Date.now(), _by: role, _who: needName ? (me.trim() || "익명") : "공공" });
+    setSel(null);
+  };
+  
+  const gonggongKey = `${sel.pid}::${sel.type}::gonggong::gonggong`;
+  const gonggongData = evals[gonggongKey];
+
+  if (groupOfRole !== "gonggong") {
+    return (
+      <div>
+        <BackBtn onClick={() => setSel(null)} />
+        <div className="mb-4">
+          <div className="flex items-center gap-2 flex-wrap mb-1">
+            <Pill color={sel.type === "ihaeng" ? C.ihaeng : C.gyeolgwa}>{sel.type === "ihaeng" ? "이행점검" : "결과확인"}</Pill>
+            <span className="text-xs font-mono" style={{ color: C.muted }}>{project.num}</span>
+            {gonggongData ? <Pill color="#2E7D5B">담당자 자료 작성됨</Pill> : <Pill color="#B8860B">담당자 자료 미작성</Pill>}
+            {!open && <Pill color={C.bad}>입력 기간 아님 (열람만 가능)</Pill>}
+          </div>
+          <h2 className="text-[22px] font-bold" style={{ color: C.ink }}>{project.name}</h2>
+          <div className="text-xs mt-1" style={{ color: C.muted }}>{roleObj.label} · {roleObj.desc}</div>
+        </div>
+
+        {needName && (
+          <div className="mb-4 max-w-sm">
+            <label className="block text-sm font-bold mb-1.5" style={{ color: "#C34B36" }}>평가자 이름 / ID (이름을 먼저 입력해주세요)</label>
+            <IN value={me} onChange={setMe} placeholder="예: 홍길동(분과명)" disabled={disabled} />
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
+          <div className="border rounded-md shadow-sm flex flex-col" style={{ borderColor: C.line, background: "#FDFDFD", height: '700px' }}>
+            <div className="p-3 border-b flex justify-between items-center" style={{ background: "#F4F7F6", borderColor: C.line }}>
+              <span className="font-bold text-sm" style={{ color: C.ihaeng }}>📄 담당자 작성자료 <span className="font-normal text-xs text-gray-500">(열람 전용)</span></span>
+              <span className="text-xs" style={{ color: C.muted }}>{cfg.asOf}</span>
+            </div>
+            <div className="p-5 overflow-y-auto flex-1 custom-scrollbar">
+              <GonggongReadOnly p={project} data={gonggongData} asOf={cfg.asOf} type={sel.type} />
+            </div>
+          </div>
+
+          <div className="border rounded-md shadow-sm flex flex-col bg-white" style={{ borderColor: C.line, height: '700px', opacity: needName && !me.trim() && !disabled ? 0.5 : 1, pointerEvents: needName && !me.trim() ? "none" : "auto" }}>
+            <div className="p-3 border-b font-bold text-sm" style={{ background: "#F4F7F6", color: "#C34B36", borderColor: C.line }}>
+              ✏️ 모니터링단 평가 입력
+            </div>
+            <div className="p-5 overflow-y-auto flex-1 custom-scrollbar">
+              {sel.type === "ihaeng"
+                ? <MonitorChecklistForm p={project} data={draft} set={setDraft} disabled={disabled} />
+                : <ChecklistForm schemaKey={`${sel.type}:${groupOfRole}`} data={draft} set={setDraft} disabled={disabled} />
+              }
+            </div>
+            <div className="p-3 border-t bg-gray-50 flex items-center justify-between" style={{ borderColor: C.line }}>
+              {needName && !me.trim() && !disabled ? (
+                <span className="text-sm font-bold ml-2" style={{ color: C.bad }}>평가자 이름을 먼저 입력하세요.</span>
+              ) : (
+                <span className="text-xs text-gray-500 ml-2">모든 항목을 확인 후 저장해주세요.</span>
+              )}
+              <div className="flex gap-2">
+                <button onClick={() => setSel(null)} className="px-4 py-2 rounded-md text-sm font-semibold bg-white shadow-sm" style={{ border: `1px solid ${C.line}`, color: C.ink }}>취소</button>
+                <button onClick={handleSave} disabled={disabled || (needName && !me.trim())} className="px-6 py-2 rounded-md text-sm font-bold text-white shadow-sm transition-colors"
+                  style={{ background: disabled || (needName && !me.trim()) ? C.muted : C.pine, cursor: disabled ? "not-allowed" : "pointer" }}>저장</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <BackBtn onClick={() => setSel(null)} />
+      <div className="mb-4">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Pill color={sel.type === "ihaeng" ? C.ihaeng : C.gyeolgwa}>{sel.type === "ihaeng" ? "이행점검" : "결과확인"}</Pill>
+          <span className="text-xs font-mono" style={{ color: C.muted }}>{project.num}</span>
+          {!open && <Pill color={C.bad}>입력 기간 아님 (열람만 가능)</Pill>}
+        </div>
+        <h2 className="text-lg font-bold mt-1" style={{ color: C.ink }}>{project.name}</h2>
+        <div className="text-xs" style={{ color: C.muted }}>{roleObj.label} · {roleObj.desc}</div>
+      </div>
+
+      <ProjectInfoEdit p={project} disabled={disabled} onSave={(patch) => saveOverride(project.id, patch)} />
+
+      <div>
+        {sel.type === "ihaeng"
+          ? <SeoguChecklist p={project} data={draft} set={setDraft} disabled={disabled} asOf={cfg.asOf} />
+          : <GyeolgwaGonggong p={project} data={draft} set={setDraft} disabled={disabled} />
+        }
+      </div>
+
+      <div className="flex gap-2 mt-6">
+        <button onClick={handleSave} disabled={disabled} className="px-5 py-2.5 rounded-md text-sm font-bold text-white"
+          style={{ background: disabled ? C.muted : C.pine, cursor: disabled ? "not-allowed" : "pointer" }}>저장</button>
+        <button onClick={() => setSel(null)} className="px-5 py-2.5 rounded-md text-sm font-semibold" style={{ border: `1px solid ${C.line}`, color: C.ink }}>목록으로</button>
+      </div>
+    </div>
+  );
+}
+
+function Evidence({ projects }) {
+  const [evidences, setEvidences] = useState([]);
+  const [selProject, setSelProject] = useState("");
+  const [type, setType] = useState("성과지표 근거자료");
+  const [title, setTitle] = useState("");
+  const [uploader, setUploader] = useState("");
+  const [regMode, setRegMode] = useState("file");
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [linkUrl, setLinkUrl] = useState("");
+  const [uploading, setUploading] = useState(false);
+
+  useEffect(() => {
+    const unsub = db.collection("evidences").orderBy("createdAt", "desc").onSnapshot((snapshot) => {
+      const list = [];
+      snapshot.forEach((doc) => {
+        list.push({ id: doc.id, ...doc.data() });
+      });
+      setEvidences(list);
+    });
+    return () => unsub();
+  }, []);
+
+  const resetForm = () => {
+    setTitle("");
+    setLinkUrl("");
+    setSelectedFile(null);
+    const fileInput = document.getElementById("evidence_file_input");
+    if (fileInput) fileInput.value = "";
+  };
+
+  const handleAdd = async () => {
+    if (!selProject) {
+      alert("대상 사업을 선택해주세요.");
+      return;
+    }
+    const p = projects.find(x => x.name === selProject);
+
+    if (regMode === "file") {
+      if (!selectedFile) {
+        alert("첨부할 파일을 선택해주세요.");
+        return;
+      }
+      setUploading(true);
+      try {
+        const fileRef = storage.ref(`evidences/${Date.now()}_${selectedFile.name}`);
+        const snapshot = await fileRef.put(selectedFile);
+        const downloadUrl = await snapshot.ref.getDownloadURL();
+
+        await db.collection("evidences").add({
+          pNum: p ? p.num : "-",
+          pName: selProject,
+          type: type,
+          title: title || selectedFile.name,
+          regMode: "file",
+          downloadUrl: downloadUrl,
+          storagePath: fileRef.fullPath,
+          fileDesc: `${selectedFile.name} · ${(selectedFile.size / 1024).toFixed(0)}KB`,
+          uploader: uploader || "담당자",
+          date: new Date().toISOString().slice(0, 10),
+          createdAt: Date.now()
+        });
+        resetForm();
+        alert("증빙자료가 클라우드에 성공적으로 등록되었습니다.");
+      } catch (err) {
+        alert("업로드 중 오류 발생: " + err.message);
+      } finally {
+        setUploading(false);
+      }
+    } else {
+      if (!linkUrl) {
+        alert("공유 링크 주소를 입력해주세요.");
+        return;
+      }
+      try {
+        await db.collection("evidences").add({
+          pNum: p ? p.num : "-",
+          pName: selProject,
+          type: type,
+          title: title || "공유 링크 자료",
+          regMode: "link",
+          downloadUrl: linkUrl,
+          fileDesc: "",
+          uploader: uploader || "담당자",
+          date: new Date().toISOString().slice(0, 10),
+          createdAt: Date.now()
+        });
+        resetForm();
+        alert("공유 링크가 성공적으로 등록되었습니다.");
+      } catch (err) {
+        alert("등록 중 오류 발생: " + err.message);
+      }
+    }
+  };
+
+  const handleDelete = async (ev) => {
+    if (!confirm("해당 증빙자료를 삭제하시겠습니까?")) return;
+    try {
+      if (ev.storagePath) {
+        await storage.ref(ev.storagePath).delete().catch(() => {});
+      }
+      await db.collection("evidences").doc(ev.id).delete();
+      alert("삭제되었습니다.");
+    } catch (err) {
+      alert("삭제 중 오류 발생: " + err.message);
+    }
+  };
+
+  return (
+    <div>
+      <h2 className="text-xl font-bold mb-2" style={{ color: C.ink }}>증빙자료 등록·열람 (클라우드 동기화)</h2>
+      <p className="text-sm mb-6" style={{ color: C.muted, lineHeight: '1.6' }}>
+        등록된 모든 증빙자료는 Firebase Cloud Storage에 영구 보관되며, 모든 사용자가 즉시 다운로드하거나 열람할 수 있습니다.
+      </p>
+
+      <div className="p-5 rounded-md mb-6" style={{ border: `1px solid ${C.line}`, background: "#FAF9F4" }}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3 mb-4">
+          <Field label="대상 사업">
+            <select value={selProject} onChange={(e) => setSelProject(e.target.value)} className="w-full rounded-md px-2.5 py-1.5 text-sm bg-white" style={{ border: `1px solid ${C.line}`, outline: 'none' }}>
+              <option value="">사업 선택...</option>
+              {projects && projects.map((p) => (
+                <option key={p.id} value={p.name}>[{p.num}] {p.name}</option>
+              ))}
+            </select>
+          </Field>
+          <Field label="자료 유형">
+            <select value={type} onChange={(e) => setType(e.target.value)} className="w-full rounded-md px-2.5 py-1.5 text-sm bg-white" style={{ border: `1px solid ${C.line}`, outline: 'none' }}>
+              <option value="성과지표 근거자료">성과지표 근거자료</option>
+              <option value="사업관련 보도자료">사업관련 보도자료</option>
+            </select>
+          </Field>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3 mb-4">
+          <Field label="자료 제목 (선택 — 비우면 파일명 사용)">
+            <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="예: 5월 이용실적 집계표" className="w-full rounded-md px-2.5 py-1.5 text-sm bg-white" style={{ border: `1px solid ${C.line}`, color: C.ink, outline: 'none' }} />
+          </Field>
+          <Field label="등록 방식">
+            <div className="flex gap-2">
+              <button onClick={() => setRegMode("file")} className="px-4 py-1.5 rounded-md text-sm font-bold shadow-sm transition-colors" 
+                style={{ background: regMode === "file" ? C.pine : "#fff", color: regMode === "file" ? "#fff" : C.ink, border: regMode === "file" ? `1px solid ${C.pine}` : `1px solid ${C.line}` }}>
+                📎 파일 첨부 (Cloud Storage)
+              </button>
+              <button onClick={() => setRegMode("link")} className="px-4 py-1.5 rounded-md text-sm font-bold shadow-sm transition-colors" 
+                style={{ background: regMode === "link" ? C.pine : "#fff", color: regMode === "link" ? "#fff" : C.ink, border: regMode === "link" ? `1px solid ${C.pine}` : `1px solid ${C.line}` }}>
+                🔗 공유 링크
+              </button>
+            </div>
+          </Field>
+        </div>
+
+        <div className="mb-4">
+          {regMode === "file" ? (
+            <Field label="첨부파일 (한글·PDF·이미지 · 클라우드 자동 업로드)">
+              <input id="evidence_file_input" type="file" onChange={(e) => setSelectedFile(e.target.files[0])} className="w-full rounded-md px-2.5 py-1.5 text-sm bg-white" style={{ border: `1px solid ${C.line}` }} />
+            </Field>
+          ) : (
+            <Field label="클라우드 공유 링크 주소">
+              <input type="text" value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} placeholder="https://drive.google.com/..." className="w-full rounded-md px-2.5 py-1.5 text-sm bg-white" style={{ border: `1px solid ${C.line}`, outline: 'none' }} />
+            </Field>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2 pt-2 border-t" style={{ borderColor: C.line }}>
+          <input type="text" value={uploader} onChange={(e) => setUploader(e.target.value)} placeholder="등록자 이름" className="rounded-md px-2.5 py-1.5 text-sm w-32 bg-white" style={{ border: `1px solid ${C.line}` }} />
+          <button onClick={handleAdd} disabled={uploading || !selProject} className="px-5 py-1.5 rounded-md text-sm font-bold text-white transition-colors" style={{ background: (uploading || !selProject) ? C.muted : C.pine, cursor: (uploading || !selProject) ? 'not-allowed' : 'pointer' }}>
+            {uploading ? "업로드 중…" : "증빙 등록"}
+          </button>
+        </div>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm" style={{ borderCollapse: "collapse", minWidth: 800 }}>
+          <thead>
+            <tr style={{ background: C.pineSoft }}>
+              <th className="text-left px-3 py-2" style={{ color: C.pineDark }}>사업</th>
+              <th className="text-left px-3 py-2 w-36" style={{ color: C.pineDark }}>유형</th>
+              <th className="text-left px-3 py-2" style={{ color: C.pineDark }}>제목</th>
+              <th className="text-center px-3 py-2 w-20" style={{ color: C.pineDark }}>등록자</th>
+              <th className="text-center px-3 py-2 w-24" style={{ color: C.pineDark }}>일자</th>
+            </tr>
+          </thead>
+          <tbody>
+            {evidences.length === 0 ? (
+              <tr>
+                <td colSpan="5" className="text-center py-8 text-sm" style={{ color: C.muted }}>등록된 증빙자료가 없습니다.</td>
+              </tr>
+            ) : (
+              evidences.map((ev) => (
+                <tr key={ev.id} style={{ borderBottom: `1px dashed ${C.line}` }}>
+                  <td className="px-3 py-2">
+                    <div className="text-xs font-mono" style={{ color: C.muted }}>{ev.pNum}</div>
+                    <div className="font-semibold" style={{ color: C.ink }}>{ev.pName}</div>
+                  </td>
+                  <td className="px-3 py-2">{ev.type}</td>
+                  <td className="px-3 py-2">
+                    <a href={ev.downloadUrl} download={ev.regMode === "file" ? ev.title : undefined} target="_blank" rel="noreferrer" className="hover:underline font-semibold flex items-center gap-1" style={{ color: C.pine }}>
+                      {ev.regMode === "file" ? "📎 " : "🔗 "}{ev.title}
+                    </a>
+                    {ev.fileDesc && <div className="text-xs ml-4 mt-0.5" style={{ color: C.muted }}>{ev.fileDesc}</div>}
+                  </td>
+                  <td className="px-3 py-2 text-center">{ev.uploader}</td>
+                  <td className="px-3 py-2 text-center text-xs">
+                    <div>{ev.date}</div>
+                    <button onClick={() => handleDelete(ev)} className="text-red-500 font-semibold mt-0.5 hover:underline">삭제</button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function Admin({ cfg, saveCfg }) {
+  const up = (patch) => saveCfg({ ...cfg, ...patch });
+  return (
+    <div>
+      <h2 className="text-xl font-bold mb-2" style={{ color: C.ink }}>접속 권한 및 기간 관리</h2>
+      <p className="text-sm mb-6" style={{ color: C.muted }}>각 권한(공공 담당자, 모니터링단) 및 점검 단계별로 입력을 개방하거나 잠글 수 있습니다. 설정은 클라우드에 즉시 동기화됩니다.</p>
+
+      <div className="p-5 rounded-md bg-white border" style={{ borderColor: C.line }}>
+        {[
+          { k: "ihaeng_gonggong", l: "이행점검 · 공공(사업담당) 입력 권한" },
+          { k: "ihaeng_eval", l: "이행점검 · 모니터링단 평가 권한" },
+          { k: "gyeolgwa_gonggong", l: "결과확인 · 공공(사업담당) 입력 권한" },
+          { k: "gyeolgwa_eval", l: "결과확인 · 모니터링단 평가 권한" },
+        ].map((row) => (
+          <div key={row.k} className="flex items-center justify-between py-3" style={{ borderBottom: `1px dashed ${C.line}` }}>
+            <span className="text-sm font-bold" style={{ color: C.ink }}>{row.l}</span>
+            <button onClick={() => up({ periods: { ...cfg.periods, [row.k]: !cfg.periods[row.k] } })}
+              className="px-5 py-2 rounded-md text-xs font-bold transition-all shadow-sm flex items-center gap-1.5"
+              style={{ background: cfg.periods[row.k] ? C.pine : "#F3F1EA", color: cfg.periods[row.k] ? "#fff" : C.muted, border: `1px solid ${cfg.periods[row.k] ? C.pine : C.line}` }}>
+              {cfg.periods[row.k] ? "🔓 개방됨" : "🔒 잠금 상태"}
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SummaryAggregate({ projects, evals }) {
+  const [type, setType] = useState("ihaeng");
+
+  const aggregatedData = useMemo(() => {
+    const list = [];
+    projects.forEach((p) => {
+      const evalKeys = Object.keys(evals).filter(k => k.startsWith(`${p.id}::${type}::monitor::`));
+      if (evalKeys.length === 0) return;
+
+      let cnt = evalKeys.length;
+      if (type === "ihaeng") {
+        let sumPlan = 0, sumBdg = 0, sumGen = 0, genCnt = 0;
+        evalKeys.forEach(k => {
+          const item = evals[k] || {};
+          if (item.m_deg_plan) sumPlan += Number(item.m_deg_plan);
+          if (item.m_deg_budget) sumBdg += Number(item.m_deg_budget);
+          for (let i = 0; i < 13; i++) {
+            if (item["m_gen_" + i]) {
+              sumGen += Number(item["m_gen_" + i]);
+              genCnt++;
+            }
+          }
+        });
+        const avgPlan = (sumPlan / cnt) || 0;
+        const avgBdg = (sumBdg / cnt) || 0;
+        const avgGen = genCnt > 0 ? (sumGen / genCnt) : 0;
+        const totalAvg = ((avgPlan + avgBdg + avgGen) / 3) || 0;
+
+        list.push({ id: p.id, num: p.num, name: p.name, cnt, avgPlan: avgPlan.toFixed(2), avgBdg: avgBdg.toFixed(2), avgGen: avgGen.toFixed(2), totalAvg: totalAvg.toFixed(2) });
+      } else {
+        let sumItems = 0, itemCnt = 0;
+        evalKeys.forEach(k => {
+          const item = evals[k] || {};
+          for (let i = 0; i < 6; i++) {
+            if (item["it_" + i]) {
+              sumItems += Number(item["it_" + i]);
+              itemCnt++;
+            }
+          }
+        });
+        const totalAvg = itemCnt > 0 ? (sumItems / itemCnt) : 0;
+        list.push({ id: p.id, num: p.num, name: p.name, cnt, totalAvg: totalAvg.toFixed(2) });
+      }
+    });
+    return list;
+  }, [projects, evals, type]);
+
+  return (
+    <div>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-4">
+        <div>
+          <h2 className="text-xl font-bold" style={{ color: C.ink }}>평가표 집계 <span className="text-sm font-normal text-[#6B7169]">(평균·참여인원 / 공공 자체점검 제외)</span></h2>
+        </div>
+        <div className="flex border rounded-md overflow-hidden" style={{ borderColor: C.line }}>
+          <button onClick={() => setType('ihaeng')} className={`px-4 py-1.5 text-sm font-bold transition-colors ${type === 'ihaeng' ? 'bg-[#22574A] text-white' : 'bg-white text-[#6B7169]'}`}>이행점검</button>
+          <button onClick={() => setType('gyeolgwa')} className={`px-4 py-1.5 text-sm font-bold transition-colors ${type === 'gyeolgwa' ? 'bg-[#22574A] text-white' : 'bg-white text-[#6B7169]'}`}>결과확인</button>
+        </div>
+      </div>
+
+      {aggregatedData.length === 0 ? (
+        <div className="p-6 rounded-md text-sm text-[#4A6B5D] bg-[#EAF2ED] mb-4">아직 평가단 입력이 없습니다. 평가가 저장되면 사업별 평균이 여기에 집계됩니다.</div>
+      ) : (
+        <div className="overflow-x-auto mb-4 bg-white border rounded-md" style={{ borderColor: C.line }}>
+          <table className="w-full text-sm" style={{ borderCollapse: "collapse", minWidth: 700 }}>
+            <thead>
+              <tr style={{ background: C.pineSoft }}>
+                <th className="text-left px-3 py-2 w-24" style={{ color: C.pineDark }}>과제번호</th>
+                <th className="text-left px-3 py-2" style={{ color: C.pineDark }}>사업명</th>
+                <th className="text-center px-3 py-2 w-20" style={{ color: C.pineDark }}>참여인원</th>
+                {type === "ihaeng" ? (
+                  <>
+                    <th className="text-center px-3 py-2 w-28" style={{ color: C.pineDark }}>사업계획 이행</th>
+                    <th className="text-center px-3 py-2 w-28" style={{ color: C.pineDark }}>예산집행 이행</th>
+                    <th className="text-center px-3 py-2 w-28" style={{ color: C.pineDark }}>전반적 점검</th>
+                    <th className="text-center px-3 py-2 w-24 font-bold" style={{ color: C.pineDark }}>종합 평균</th>
+                  </>
+                ) : (
+                  <th className="text-center px-3 py-2 w-32 font-bold" style={{ color: C.pineDark }}>종합 평균 (상3·중2·하1)</th>
+                )}
+              </tr>
+            </thead>
+            <tbody>
+              {aggregatedData.map((row) => (
+                <tr key={row.id} style={{ borderBottom: `1px solid ${C.line}` }}>
+                  <td className="px-3 py-2.5 font-mono text-xs font-semibold" style={{ color: C.muted }}>{row.num}</td>
+                  <td className="px-3 py-2.5 font-medium" style={{ color: C.ink }}>{row.name}</td>
+                  <td className="px-3 py-2.5 text-center font-bold" style={{ color: C.pine }}>{row.cnt}명</td>
+                  {type === "ihaeng" ? (
+                    <>
+                      <td className="px-3 py-2.5 text-center">{row.avgPlan}점</td>
+                      <td className="px-3 py-2.5 text-center">{row.avgBdg}점</td>
+                      <td className="px-3 py-2.5 text-center">{row.avgGen}점</td>
+                      <td className="px-3 py-2.5 text-center font-bold text-blue-700 bg-blue-50/50">{row.totalAvg}점</td>
+                    </>
+                  ) : (
+                    <td className="px-3 py-2.5 text-center font-bold text-blue-700 bg-blue-50/50">{row.totalAvg}점</td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ReportGenerator({ projects, evals }) {
+  const [type, setType] = useState("ihaeng");
+
+  const reportData = useMemo(() => {
+    let total = projects.length;
+    let submitted = 0;
+    let sumAch = 0, cntAch = 0;
+    let sumBdg = 0, sumSpd = 0;
+    let stgMap = {};
+    let changedProjects = [];
+
+    projects.forEach(p => {
+      const gKey = `${p.id}::${type}::gonggong::gonggong`;
+      const gData = evals[gKey];
+      const has = !!gData;
+      if (has) submitted++;
+
+      const stKey = p.num.split('-').slice(0, 2).join('-');
+      const stName = STRATEGY_NAMES[stKey] || `추진전략 ${stKey}`;
+      if (!stgMap[stKey]) stgMap[stKey] = { id: stKey, name: stName, cnt: 0, sub: 0, aS: 0, aC: 0, bS: 0, sS: 0 };
+      stgMap[stKey].cnt++;
+      if (has) stgMap[stKey].sub++;
+
+      let aR = null;
+      const goal = parseFloat(p.goal);
+      if (has && !isNaN(goal) && goal > 0) {
+        const r = parseFloat(gData.result);
+        if (!isNaN(r)) {
+          aR = (r / goal) * 100;
+          sumAch += Math.min(aR, 100);
+          cntAch++;
+          stgMap[stKey].aS += Math.min(aR, 100);
+          stgMap[stKey].aC++;
+        }
+      }
+
+      const nb = p.budget === "비예산" || !p.budget || p.budget == "0" || p.budget == 0;
+      if (!nb) {
+        const bdg = parseFloat(p.budget);
+        sumBdg += bdg;
+        stgMap[stKey].bS += bdg;
+        if (has) {
+          const spd = parseFloat(gData.spend);
+          if (!isNaN(spd)) {
+            sumSpd += spd;
+            stgMap[stKey].sS += spd;
+          }
+        }
+      }
+
+      if (has) {
+        const changes = [];
+        if (gData.ch_goal) changes.push("목표");
+        if (gData.ch_kpi) changes.push("성과지표");
+        if (gData.ch_budget) changes.push("예산");
+        if (gData.ch_content) changes.push("사업내용");
+        if (gData.ch_method) changes.push("수행방법");
+        if (gData.ch_etc) changes.push("기타");
+        if (changes.length > 0 || p.changedAt) {
+          changedProjects.push({ ...p, changes, changeNote: p.changeNote || gData.ch_detail });
+        }
+      }
+    });
+
+    const strategies = Object.values(stgMap).sort((a, b) => a.id.localeCompare(b.id));
+    const avgAch = cntAch ? sumAch / cntAch : 0;
+    const avgBdg = sumBdg ? (sumSpd / sumBdg) * 100 : 0;
+
+    return { total, submitted, avgAch, sumBdg, sumSpd, avgBdg, strategies, changedProjects };
+  }, [projects, evals, type]);
+
+  return (
+    <div>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-6 no-print">
+        <div>
+          <h2 className="text-xl font-bold" style={{ color: C.ink }}>핵심 분석 결과보고서</h2>
+          <p className="text-sm text-[#6B7169]">공공 입력 및 모니터링 데이터를 기반으로 자동 생성된 종합 분석 보고서입니다.</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="flex border rounded-md overflow-hidden bg-white" style={{ borderColor: C.line }}>
+            <button onClick={() => setType("ihaeng")} className={`px-4 py-1.5 text-sm font-bold transition-colors ${type === "ihaeng" ? 'bg-[#005BAA] text-white' : 'text-[#6B7169]'}`}>이행점검</button>
+            <button onClick={() => setType("gyeolgwa")} className={`px-4 py-1.5 text-sm font-bold transition-colors ${type === "gyeolgwa" ? 'bg-[#005BAA] text-white' : 'text-[#6B7169]'}`}>결과확인</button>
+          </div>
+          <button onClick={() => window.print()} className="px-4 py-1.5 rounded-md text-sm font-bold text-white shadow-sm flex items-center gap-1.5" style={{ background: C.pineDark }}>
+            🖨️ 보고서 인쇄 (PDF 저장)
+          </button>
+        </div>
+      </div>
+
+      {/* 인쇄용 리포트 박스 */}
+      <div className="p-8 rounded-lg bg-white border shadow-sm report-box space-y-8" style={{ borderColor: C.line, fontFamily: "'Pretendard','Malgun Gothic',sans-serif" }}>
+        
+        {/* 리포트 헤더 */}
+        <div className="text-center pb-6 border-b-2" style={{ borderColor: C.pineDark }}>
+          <div className="text-xs font-bold tracking-widest mb-1" style={{ color: C.pine }}>대구광역시 지역사회보장협의체</div>
+          <h1 className="text-2xl font-bold mb-2" style={{ color: C.ink }}>제5기 대구광역시 지역사회보장계획 2026년 연차별 시행계획<br/>{type === 'ihaeng' ? '이행점검' : '결과확인'} 종합 분석 결과보고서</h1>
+          <div className="text-xs text-[#6B7169]">발행일: 2026년 8월 27일 · 기준: 2026. 7. 31 기준</div>
+        </div>
+
+        {/* 1. 추진 개요 및 요약 */}
+        <div>
+          <h3 className="text-base font-bold mb-3 pb-1" style={{ color: C.pine, borderBottom: `2px solid ${C.pineSoft}` }}>1. 전체 추진 개요 및 핵심 요약</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 rounded-md bg-[#FAF9F4] border text-sm" style={{ borderColor: C.line }}>
+            <div>
+              <span className="text-xs text-[#6B7169] block">전체 세부사업</span>
+              <span className="text-lg font-bold">{reportData.total}개 사업</span>
+            </div>
+            <div>
+              <span className="text-xs text-[#6B7169] block">공공 점검자료 제출</span>
+              <span className="text-lg font-bold text-[#005BAA]">{reportData.submitted}개 ({Math.round((reportData.submitted/reportData.total)*100)}%)</span>
+            </div>
+            <div>
+              <span className="text-xs text-[#6B7169] block">평균 목표달성률</span>
+              <span className="text-lg font-bold text-[#B8860B]">{reportData.avgAch.toFixed(1)}%</span>
+            </div>
+            <div>
+              <span className="text-xs text-[#6B7169] block">예산 집행률(총액)</span>
+              <span className="text-lg font-bold text-[#B8860B]">{reportData.avgBdg.toFixed(1)}%</span>
+            </div>
+          </div>
+        </div>
+
+        {/* 2. 추진전략 단위별 현황 */}
+        <div>
+          <h3 className="text-base font-bold mb-3 pb-1" style={{ color: C.pine, borderBottom: `2px solid ${C.pineSoft}` }}>2. 추진전략 단위별 성과 분석</h3>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm border-collapse" style={{ borderColor: C.line }}>
+              <thead>
+                <tr style={{ background: C.pineSoft }}>
+                  <th className="text-left p-2.5 border" style={{ borderColor: C.line, color: C.pineDark }}>전략코드</th>
+                  <th className="text-left p-2.5 border" style={{ borderColor: C.line, color: C.pineDark }}>추진전략명</th>
+                  <th className="text-center p-2.5 border w-20" style={{ borderColor: C.line, color: C.pineDark }}>사업수</th>
+                  <th className="text-center p-2.5 border w-20" style={{ borderColor: C.line, color: C.pineDark }}>제출수</th>
+                  <th className="text-center p-2.5 border w-28" style={{ borderColor: C.line, color: C.pineDark }}>평균 달성률</th>
+                  <th className="text-center p-2.5 border w-28" style={{ borderColor: C.line, color: C.pineDark }}>예산 집행률</th>
+                </tr>
+              </thead>
+              <tbody>
+                {reportData.strategies.map(stg => {
+                  const aRate = stg.aC ? stg.aS / stg.aC : 0;
+                  const bRate = stg.bS ? (stg.sS / stg.bS) * 100 : 0;
+                  return (
+                    <tr key={stg.id} className="border-b" style={{ borderColor: C.line }}>
+                      <td className="p-2.5 border font-mono font-bold" style={{ borderColor: C.line }}>{stg.id}</td>
+                      <td className="p-2.5 border font-medium" style={{ borderColor: C.line }}>{stg.name}</td>
+                      <td className="p-2.5 border text-center" style={{ borderColor: C.line }}>{stg.cnt}</td>
+                      <td className="p-2.5 border text-center font-bold text-[#005BAA]" style={{ borderColor: C.line }}>{stg.sub}</td>
+                      <td className="p-2.5 border text-center font-bold" style={{ borderColor: C.line, color: pctColor(aRate) }}>{aRate.toFixed(1)}%</td>
+                      <td className="p-2.5 border text-center font-bold" style={{ borderColor: C.line, color: pctColor(bRate) }}>{stg.bS ? bRate.toFixed(1) + '%' : '비예산'}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* 3. 사업계획 변경 필요 현황 */}
+        <div>
+          <h3 className="text-base font-bold mb-3 pb-1" style={{ color: C.pine, borderBottom: `2px solid ${C.pineSoft}` }}>3. 사업계획 변경 및 특이사항 사업 요약</h3>
+          {reportData.changedProjects.length === 0 ? (
+            <div className="p-4 rounded-md text-sm text-[#6B7169] bg-[#FAF9F4] border" style={{ borderColor: C.line }}>변경 사항이 입력된 사업이 없습니다.</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm border-collapse" style={{ borderColor: C.line }}>
+                <thead>
+                  <tr style={{ background: C.pineSoft }}>
+                    <th className="text-left p-2.5 border w-24" style={{ borderColor: C.line, color: C.pineDark }}>과제번호</th>
+                    <th className="text-left p-2.5 border" style={{ borderColor: C.line, color: C.pineDark }}>세부사업명</th>
+                    <th className="text-left p-2.5 border w-36" style={{ borderColor: C.line, color: C.pineDark }}>변경 영역</th>
+                    <th className="text-left p-2.5 border" style={{ borderColor: C.line, color: C.pineDark }}>변경 사유 및 내용</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {reportData.changedProjects.map(cp => (
+                    <tr key={cp.id} className="border-b" style={{ borderColor: C.line }}>
+                      <td className="p-2.5 border font-mono text-xs font-bold" style={{ borderColor: C.line }}>{cp.num}</td>
+                      <td className="p-2.5 border font-semibold" style={{ borderColor: C.line }}>{cp.name}</td>
+                      <td className="p-2.5 border text-xs font-bold text-[#B8860B]" style={{ borderColor: C.line }}>{cp.changes.join(', ') || '정보 수정'}</td>
+                      <td className="p-2.5 border text-xs" style={{ borderColor: C.line }}>{cp.changeNote || '사유 미기재'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* 종합 제언 */}
+        <div className="p-4 rounded-md bg-[#FAF9F4] border text-sm" style={{ borderColor: C.line }}>
+          <h4 className="font-bold mb-1.5" style={{ color: C.pineDark }}>💡 종합 분석 및 제언</h4>
+          <p className="text-xs leading-relaxed text-[#6B7169]">
+            본 보고서는 2026년도 지역사회보장계획 이행상황을 점검한 결과로, 전반적인 목표달성률은 양호하나 일부 예산 집행 부진 사업 및 성과지표 미달성 사업에 대한 하반기 집중 모니터링과 개선 조치가 필요합니다. 변경이 요구되는 사업은 신속하게 추경 및 계획 변경 절차를 거쳐 사업 실효성을 제고해야 합니다.
+          </p>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  const [cfg, setCfg] = useState(DEFAULT_CFG);
+  const [evals, setEvals] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [role, setRole] = useState(null);
+  const [me, setMe] = useState("");
+  const [view, setView] = useState("summary");
+  const [sel, setSel] = useState(null);
+  const [toast, setToast] = useState("");
+
+  const projects = useMemo(() =>
+    PROJECTS_RAW.map((p) => ({ ...p, ...(cfg.overrides[p.id] || {}) })), [cfg.overrides]);
+
+  useEffect(() => {
+    const unsubCfg = db.collection("settings").doc("config").onSnapshot((doc) => {
+      if (doc.exists) setCfg(prev => ({ ...prev, ...doc.data() }));
+    });
+
+    const unsubEvals = db.collection("evals").onSnapshot((snapshot) => {
+      const next = {};
+      snapshot.forEach(doc => { next[doc.id] = doc.data(); });
+      setEvals(next);
+      setLoading(false);
+    });
+
+    return () => { unsubCfg(); unsubEvals(); };
+  }, []);
+
+  const flash = (m) => { setToast(m); setTimeout(() => setToast(""), 1800); };
+  
+  const saveCfg = useCallback(async (next) => {
+    setCfg(next);
+    await db.collection("settings").doc("config").set(next, { merge: true });
+    flash("설정이 동기화되었습니다");
+  }, []);
+
+  const saveEvals = useCallback(async (key, patch) => {
+    await db.collection("evals").doc(key).set(patch, { merge: true });
+    flash("클라우드에 저장되었습니다");
+  }, []);
+
+  const saveOverride = useCallback(async (pid, patch) => {
+    const nextOverrides = { ...(cfg.overrides || {}), [pid]: { ...(cfg.overrides?.[pid] || {}), ...patch } };
+    const nextCfg = { ...cfg, overrides: nextOverrides };
+    setCfg(nextCfg);
+    await db.collection("settings").doc("config").set({ overrides: nextOverrides }, { merge: true });
+    flash("사업정보가 변경되었습니다");
+  }, [cfg]);
+
+  if (loading) return <div className="p-10 text-center font-bold" style={{ color: C.muted }}>클라우드 데이터를 불러오는 중…</div>;
+
+  if (!role) {
+    return <LoginScreen onLogin={(r) => { setRole(r); setSel(null); setView("summary"); }} />;
+  }
+
+  const roleObj = ROLES.find((r) => r.id === role) || ROLES[1];
+  const groupOfRole = role === "gonggong" ? "gonggong" : role === "monitor" ? "monitor" : "gonggong";
+  const periodOpen = (type, group) => group === "gonggong" ? cfg.periods[`${type}_gonggong`] : cfg.periods[`${type}_eval`];
+
+  const tabs = [
+    { id: "summary", l: "종합 대시보드" },
+    { id: "dash", l: "사업별 현황" },
+    ...(role !== "admin" ? [{ id: "monitor", l: "모니터링 입력" }] : []),
+    { id: "evidence", l: "증빙자료" },
+    ...(role === "admin" ? [
+      { id: "admin", l: "관리자" }, 
+      { id: "aggregate", l: "집계 결과" },
+      { id: "report", l: "결과보고서" }
+    ] : []),
+  ];
+
+  return (
+    <div style={{ background: C.paper, minHeight: "100vh", fontFamily: "'Pretendard','Apple SD Gothic Neo','Malgun Gothic',-apple-system,sans-serif" }}>
+      <header style={{ background: C.pineDark }} className="text-white no-print">
+        <div className="max-w-6xl mx-auto px-5 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          <div>
+            <div className="text-[11px] tracking-widest font-semibold" style={{ color: "#9DBBB0" }}>대구광역시 지역사회보장협의체</div>
+            <h1 className="text-lg md:text-xl font-bold mt-0.5">지역사회보장계획 온라인 모니터링 시스템</h1>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="px-3 py-1 rounded-full text-xs font-bold" style={{ background: "rgba(255,255,255,0.2)", color: "#fff" }}>
+              접속 중: {roleObj.label}
+            </div>
+            <button onClick={() => setRole(null)} className="text-xs transition-colors hover:text-white underline" style={{ color: "#9DBBB0" }}>
+              로그아웃
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <div style={{ background: C.pine }} className="text-white no-print">
+        <div className="max-w-6xl mx-auto px-5 py-3">
+          <div className="text-[11px] font-semibold mb-1.5" style={{ color: "#C6DAD1" }}>{cfg.planTitle}</div>
+        </div>
+      </div>
+
+      <nav className="max-w-6xl mx-auto px-5 pt-4 no-print">
+        <div className="flex gap-1 flex-wrap">
+          {tabs.map((t) => (
+            <button key={t.id} onClick={() => { setView(t.id); if (t.id !== "monitor") setSel(null); }}
+              className="px-4 py-2 text-sm font-semibold rounded-t-md"
+              style={{ background: view === t.id ? C.surface : "transparent", color: view === t.id ? C.pine : C.muted, border: view === t.id ? `1px solid ${C.line}` : "1px solid transparent", borderBottom: view === t.id ? `1px solid ${C.surface}` : "1px solid transparent", marginBottom: -1 }}>
+              {t.l}
+            </button>
+          ))}
+        </div>
+      </nav>
+
+      <main className="max-w-6xl mx-auto px-5 pb-16 pt-3 md:pt-0">
+        <div style={{ background: C.surface, border: `1px solid ${C.line}` }} className="rounded-lg md:rounded-tl-none p-5 md:p-7 shadow-sm">
+          {view === "summary" && <SummaryDashboard projects={projects} evals={evals} onOpen={(pid, type) => { setSel({ pid, type }); setView("monitor"); }} />}
+          {view === "dash" && <Dashboard projects={projects} evals={evals} onOpen={(pid, type) => { setSel({ pid, type }); setView("monitor"); }} />}
+          {view === "monitor" && role !== "admin" && <MonitorView projects={projects} cfg={cfg} role={role} roleObj={roleObj} me={me} setMe={setMe} sel={sel} setSel={setSel} groupOfRole={groupOfRole} periodOpen={periodOpen} evals={evals} saveEvals={saveEvals} saveOverride={saveOverride} />}
+          {view === "evidence" && <Evidence projects={projects} />}
+          {view === "admin" && role === "admin" && <Admin cfg={cfg} saveCfg={saveCfg} />}
+          {view === "aggregate" && role === "admin" && <SummaryAggregate projects={projects} evals={evals} />}
+          {view === "report" && role === "admin" && <ReportGenerator projects={projects} evals={evals} />}
+        </div>
+      </main>
+
+      {toast && <div className="fixed bottom-5 left-1/2 -translate-x-1/2 px-4 py-2 rounded-md text-sm font-semibold text-white shadow-lg no-print" style={{ background: C.pineDark }}>{toast}</div>}
+    </div>
+  );
+}
+
+const rootEl = document.getElementById("root");
+ReactDOM.createRoot(rootEl).render(<App />);
+</script></body></html>
