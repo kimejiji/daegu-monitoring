@@ -71,7 +71,7 @@ const C = {
 };
 
 const ROLES = [
-  { id: "admin", label: "관리자(사무국)", desc: "권한 및 기간 관리" },
+  { id: "admin", label: "관리자(행복진흥원)", desc: "권한 및 기간 관리" },
   { id: "gonggong", label: "공공(사업담당)", desc: "체크리스트 작성" },
   { id: "monitor", label: "모니터링단", desc: "이행점검 및 결과 평가" },
 ];
@@ -1005,6 +1005,7 @@ function MonitorView({ projects, cfg, role, roleObj, me, setMe, sel, setSel, gro
     }
 
     await saveEvals(key, { ...draft, _updated: Date.now(), _by: role, _who: needName ? (me.trim() || "익명") : "공공" });
+    alert("성공적으로 저장되었습니다.");
     setSel(null);
   };
   
@@ -1165,7 +1166,7 @@ function Evidence({ projects }) {
           createdAt: Date.now()
         });
         resetForm();
-        alert("증빙자료가 클라우드에 성공적으로 등록되었습니다.");
+        alert("성공적으로 저장되었습니다.");
       } catch (err) {
         alert("업로드 중 오류 발생: " + err.message);
       } finally {
@@ -1190,7 +1191,7 @@ function Evidence({ projects }) {
           createdAt: Date.now()
         });
         resetForm();
-        alert("공유 링크가 성공적으로 등록되었습니다.");
+        alert("성공적으로 저장되었습니다.");
       } catch (err) {
         alert("등록 중 오류 발생: " + err.message);
       }
@@ -1212,7 +1213,7 @@ function Evidence({ projects }) {
 
   return (
     <div>
-      <h2 className="text-xl font-bold mb-2" style={{ color: C.ink }}>증빙자료 등록·열람 (클라우드 동기화)</h2>
+      <h2 className="text-xl font-bold mb-2" style={{ color: C.ink }}>증빙자료 등록·열람</h2>
       <p className="text-sm mb-6" style={{ color: C.muted, lineHeight: '1.6' }}>
         등록된 증빙자료는 다운로드 및 삭제가 가능합니다. 증빙자료 등록 및 열람 시 다른 사업의 자료를 삭제하지 않도록 주의해주세요.
       </p>
@@ -1236,10 +1237,10 @@ function Evidence({ projects }) {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3 mb-4">
-          <Field label="자료 제목 (선택 — 비우면 파일명 사용)">
+          <Field label="자료 제목 (비우면 파일명 사용)">
             <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="예: 5월 이용실적 집계표" className="w-full rounded-md px-2.5 py-1.5 text-sm bg-white" style={{ border: `1px solid ${C.line}`, color: C.ink, outline: 'none' }} />
           </Field>
-          <Field label="등록 방식">
+          <Field label="등록 방식(선택)">
             <div className="flex gap-2">
               <button onClick={() => setRegMode("file")} className="px-4 py-1.5 rounded-md text-sm font-bold shadow-sm transition-colors" 
                 style={{ background: regMode === "file" ? C.pine : "#fff", color: regMode === "file" ? "#fff" : C.ink, border: regMode === "file" ? `1px solid ${C.pine}` : `1px solid ${C.line}` }}>
@@ -1318,14 +1319,26 @@ function Evidence({ projects }) {
   );
 }
 
-function Admin({ cfg, saveCfg }) {
+function Admin({ cfg, saveCfg, projects, evals }) {
   const up = (patch) => saveCfg({ ...cfg, ...patch });
+
+  const handleBackupJSON = () => {
+    const backupData = { config: cfg, evals: evals, backupDate: new Date().toISOString() };
+    const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `daegu_monitoring_backup_${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div>
       <h2 className="text-xl font-bold mb-2" style={{ color: C.ink }}>접속 권한 및 기간 관리</h2>
       <p className="text-sm mb-6" style={{ color: C.muted }}>각 권한(공공 담당자, 모니터링단) 및 점검 단계별로 입력을 개방하거나 잠글 수 있습니다. 설정은 클라우드에 즉시 동기화됩니다.</p>
 
-      <div className="p-5 rounded-md bg-white border" style={{ borderColor: C.line }}>
+      <div className="p-5 rounded-md bg-white border mb-6" style={{ borderColor: C.line }}>
         {[
           { k: "ihaeng_gonggong", l: "이행점검 · 공공(사업담당) 입력 권한" },
           { k: "ihaeng_eval", l: "이행점검 · 모니터링단 평가 권한" },
@@ -1341,6 +1354,15 @@ function Admin({ cfg, saveCfg }) {
             </button>
           </div>
         ))}
+      </div>
+
+      <h2 className="text-xl font-bold mb-2" style={{ color: C.ink }}>데이터 백업 관리</h2>
+      <p className="text-sm mb-4" style={{ color: C.muted }}>현재 클라우드에 저장된 모든 모니터링 평가 데이터를 안전하게 파일로 백업할 수 있습니다.</p>
+      <div className="p-5 rounded-md bg-white border flex items-center justify-between" style={{ borderColor: C.line }}>
+        <span className="text-sm font-semibold" style={{ color: C.ink }}>전체 데이터 백업 (JSON 파일)</span>
+        <button onClick={handleBackupJSON} className="px-5 py-2 rounded-md text-sm font-bold text-white shadow-sm transition-colors" style={{ background: C.pine }}>
+          💾 데이터 백업(JSON) 다운로드
+        </button>
       </div>
     </div>
   );
@@ -1768,7 +1790,7 @@ function App() {
           {view === "dash" && <Dashboard projects={projects} evals={evals} onOpen={(pid, type) => { setSel({ pid, type }); setView("monitor"); }} />}
           {view === "monitor" && role !== "admin" && <MonitorView projects={projects} cfg={cfg} role={role} roleObj={roleObj} me={me} setMe={setMe} sel={sel} setSel={setSel} groupOfRole={groupOfRole} periodOpen={periodOpen} evals={evals} saveEvals={saveEvals} saveOverride={saveOverride} />}
           {view === "evidence" && <Evidence projects={projects} />}
-          {view === "admin" && role === "admin" && <Admin cfg={cfg} saveCfg={saveCfg} />}
+          {view === "admin" && role === "admin" && <Admin cfg={cfg} saveCfg={saveCfg} projects={projects} evals={evals} />}
           {view === "aggregate" && role === "admin" && <SummaryAggregate projects={projects} evals={evals} />}
           {view === "report" && role === "admin" && <ReportGenerator projects={projects} evals={evals} />}
         </div>
