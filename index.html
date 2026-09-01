@@ -97,6 +97,7 @@ const SCALE_5 = [
   { v: 5, l: "매우 충실", hint: "80% 이상" },
 ];
 
+// 이행점검 전반적 점검 문항
 const GENERAL_CHECK_ITEMS = [
   { cat: "인지도", text: "시민들은 이 사업에 대해 잘 알고 있다" },
   { cat: "인지도", text: "사업에 대한 홍보가 잘 이루어지고 있다" },
@@ -111,6 +112,25 @@ const GENERAL_CHECK_ITEMS = [
   { cat: "민관협력", text: "지역사회 내 인적, 물적 자원을 원활하게 활용하고 있다" },
   { cat: "중요성 및 효과성", text: "이 사업은 시민들의 문제나 욕구 해결에 필요하다" },
   { cat: "중요성 및 효과성", text: "이 사업은 시민의 문제나 욕구 해결에 효과적이다" },
+];
+
+// 결과확인 전반적 점검 문항 (15문항)
+const GYEOLGWA_CHECK_ITEMS = [
+  { cat: "인지도", text: "시민들은 이 사업에 대해 잘 알고 있다" },
+  { cat: "인지도", text: "사업에 대한 홍보가 잘 이루어지고 있다" },
+  { cat: "적절성", text: "사업 취지와 목적에 맞게 잘 운영되고 있다" },
+  { cat: "적절성", text: "사업이 추진 일정에 맞게 잘 진행되고 있다" },
+  { cat: "적절성", text: "사업 예산 집행이 계획대로 잘 진행되고 있다" },
+  { cat: "적절성", text: "전반적으로 사업 내용과 절차가 적절하게 이루어지고 있다" },
+  { cat: "민관협력", text: "사업 추진에 있어 공공, 구군, 민관기관과 연계 및 협력이 잘 이루어지고 있다" },
+  { cat: "민관협력", text: "계획 수립 및 추진 시 주민참여가 이루어진다" },
+  { cat: "민관협력", text: "지역사회 내 인적, 물적 자원을 원활하게 활용하고 있다" },
+  { cat: "사업성과", text: "사업의 성과를 확인할 수 있는 평가체계가 잘 구성되어 있다" },
+  { cat: "사업성과", text: "사업이 전반적으로 중요해 지속적인 추진이 필요하다" },
+  { cat: "균형발전", text: "전반적으로 이 사업이 지역균형발전에 기여한다" },
+  { cat: "균형발전", text: "지역균형발전을 위해 이 사업을 확대해야 한다" },
+  { cat: "기여도", text: "이 사업은 시민들의 욕구를 해결하는데 도움이 된다" },
+  { cat: "기여도", text: "이 사업이 대구시민의 행복 증진에 기여한다" }
 ];
 
 const CHECKLISTS = {
@@ -164,9 +184,6 @@ function SectionLabel({ n, t }) {
       <h4 className="text-base font-bold" style={{ color: C.ink }}>{t}</h4>
     </div>
   );
-}
-function Note({ children }) {
-  return <div className="px-4 py-3 rounded-md text-sm" style={{ background: C.pineSoft, color: C.pineDark }}>{children}</div>;
 }
 function BackBtn({ onClick }) {
   return <button onClick={onClick} className="text-sm font-semibold mb-3" style={{ color: C.pine }}>← 사업 목록</button>;
@@ -731,6 +748,178 @@ function SeoguChecklist({ p, data, set, disabled, asOf }) {
   );
 }
 
+// 결과확인 공공 입력 컴포넌트
+function GyeolgwaGonggong({ p, data, set, disabled }) {
+  const d = data || {};
+  const u = (k, v) => set({ ...d, [k]: v });
+  const noBudget = p.budget === "비예산" || p.budget === "" || p.budget === "-" || p.budget === 0;
+  const execRate = noBudget ? null : pct(d.spend, p.budget);
+
+  return (
+    <div>
+      {/* 사업구분 요약 */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-2 text-sm rounded-md p-3.5 mb-5" style={{ background: "#FAF9F4", border: `1px solid ${C.line}` }}>
+        <div><span style={{ color: C.muted }}>과제번호</span><div className="font-semibold font-mono">{p.num}</div></div>
+        <div className="col-span-2 md:col-span-3"><span style={{ color: C.muted }}>세부사업명</span><div className="font-semibold">{p.name}</div></div>
+        <div><span style={{ color: C.muted }}>담당과</span><div>{p.dept}</div></div>
+        <div><span style={{ color: C.muted }}>담당팀</span><div>{p.team}</div></div>
+        <div className="col-span-2"><span style={{ color: C.muted }}>담당자(연락처)</span><div>{p.officer}</div></div>
+      </div>
+
+      {/* 사업 유형 분류 */}
+      <SectionLabel n="0" t="사업 유형 분류" />
+      <div className="rounded-md p-3 mb-5" style={{ border: `1px solid ${C.line}`, background: "#FAF9F4" }}>
+        <table className="w-full text-sm" style={{ borderCollapse: "collapse" }}>
+          <thead>
+            <tr style={{ borderBottom: `1px solid ${C.line}` }}>
+              <th className="text-left py-1.5 font-semibold" style={{ color: C.pineDark }}>사업유형</th>
+              <th className="text-center py-1.5 font-semibold w-24" style={{ color: C.pineDark }}>해당</th>
+              <th className="text-center py-1.5 font-semibold w-24" style={{ color: C.pineDark }}>비해당</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[
+              { key: 'type_key', label: '중점추진사업' },
+              { key: 'type_coop', label: '민관협력사업' },
+              { key: 'type_bal', label: '균형발전사업' },
+            ].map((row) => (
+              <tr key={row.key} style={{ borderBottom: `1px dashed ${C.line}` }}>
+                <td className="py-2 font-medium" style={{ color: C.ink }}>{row.label}</td>
+                <td className="text-center py-2">
+                  <input type="radio" name={row.key} checked={d[row.key] === '해당'} onChange={() => u(row.key, '해당')} disabled={disabled} style={{ width: 16, height: 16 }} />
+                </td>
+                <td className="text-center py-2">
+                  <input type="radio" name={row.key} checked={d[row.key] === '비해당'} onChange={() => u(row.key, '비해당')} disabled={disabled} style={{ width: 16, height: 16 }} />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* 1. 예산 집행 */}
+      <SectionLabel n="1" t="'26년 시행계획 수립 시 예산액 및 집행 현황 (단위: 백만원)" />
+      <div className="rounded-md p-4 mb-5" style={{ border: `1px solid ${C.line}` }}>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm items-center">
+          <div><span style={{ color: C.muted }}>수립 시 예산액:</span> <span className="font-bold">{noBudget ? "비예산" : `${p.budget} 백만원`}</span></div>
+          <div className="flex items-center gap-2">
+            <span style={{ color: C.muted }}>예산 집행액:</span>
+            {noBudget ? <span className="text-xs text-gray-500">비예산</span> : <IN type="number" value={d.spend} onChange={(v) => u("spend", v)} disabled={disabled} w={110} placeholder="금액" />}
+          </div>
+          <div><span style={{ color: C.muted }}>예산 집행률:</span> <span className="font-bold" style={{ color: pctColor(execRate) }}>{execRate != null ? execRate.toFixed(1) + " %" : (noBudget ? "비예산" : "—")}</span></div>
+        </div>
+      </div>
+
+      {/* 2. 목표달성 정도 */}
+      <SectionLabel n="2" t="시행계획 목표달성 정도" />
+      <div className="rounded-md p-4 mb-5" style={{ border: `1px solid ${C.line}` }}>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm items-center mb-3">
+          <div><span style={{ color: C.muted }}>목표:</span> <span className="font-bold">{p.goal} {p.unit}</span></div>
+          <div className="flex items-center gap-2">
+            <span style={{ color: C.muted }}>최종실적:</span>
+            <IN type="number" value={d.result} onChange={(v) => u("result", v)} disabled={disabled} w={110} placeholder="실적값" />
+          </div>
+          <div className="flex items-center gap-4">
+            <span style={{ color: C.muted }}>목표변경 여부:</span>
+            <label className="flex items-center gap-1 cursor-pointer">
+              <input type="radio" name="goal_changed" checked={d.goal_changed === "예"} onChange={() => u("goal_changed", "예")} disabled={disabled} /> 예
+            </label>
+            <label className="flex items-center gap-1 cursor-pointer">
+              <input type="radio" name="goal_changed" checked={d.goal_changed === "아니오"} onChange={() => u("goal_changed", "아니오")} disabled={disabled} /> 아니오
+            </label>
+          </div>
+        </div>
+      </div>
+
+      {/* 3. 모니터링 결과 반영 여부 */}
+      <SectionLabel n="3" t="모니터링 결과 반영 여부" />
+      <div className="rounded-md p-4 mb-5" style={{ border: `1px solid ${C.line}` }}>
+        <div className="flex items-center gap-6 mb-3 text-sm">
+          <label className="flex items-center gap-1.5 cursor-pointer font-semibold">
+            <input type="radio" name="mon_reflect" checked={d.mon_reflect === "반영"} onChange={() => u("mon_reflect", "반영")} disabled={disabled} /> 반영
+          </label>
+          <label className="flex items-center gap-1.5 cursor-pointer font-semibold">
+            <input type="radio" name="mon_reflect" checked={d.mon_reflect === "미반영"} onChange={() => u("mon_reflect", "미반영")} disabled={disabled} /> 미반영
+          </label>
+        </div>
+        <TA value={d.mon_reflect_detail} onChange={(v) => u("mon_reflect_detail", v)} disabled={disabled} rows={2} placeholder="모니터링 결과 반영 또는 미반영 사유/구체적 내용 기재" />
+      </div>
+
+      {/* 4. 우수사업 추천 여부 */}
+      <SectionLabel n="4" t="우수사업 추천 여부" />
+      <div className="rounded-md p-4 mb-5" style={{ border: `1px solid ${C.line}` }}>
+        <div className="flex items-center gap-6 mb-3 text-sm">
+          <label className="flex items-center gap-1.5 cursor-pointer font-semibold">
+            <input type="radio" name="best_rec" checked={d.best_rec === "추천"} onChange={() => u("best_rec", "추천")} disabled={disabled} /> 추천
+          </label>
+          <label className="flex items-center gap-1.5 cursor-pointer font-semibold">
+            <input type="radio" name="best_rec" checked={d.best_rec === "비추천"} onChange={() => u("best_rec", "비추천")} disabled={disabled} /> 비추천
+          </label>
+        </div>
+        <div>
+          <label className="block text-xs font-semibold mb-1" style={{ color: C.pineDark }}>[우수사업 추천하는 이유는?]</label>
+          <TA value={d.best_rec_reason} onChange={(v) => u("best_rec_reason", v)} disabled={disabled} rows={3} placeholder="우수사업으로 추천하는 사유(또는 비추천 사유)를 구체적으로 기재해 주세요" />
+        </div>
+      </div>
+
+      {/* 5. 주요 성과 및 향후 계획 */}
+      <SectionLabel n="5" t="주요 성과 및 향후 계획" />
+      <Field label="주요 성과 및 향후 계획 작성">
+        <TA value={d.perf_and_plan} onChange={(v) => u("perf_and_plan", v)} disabled={disabled} rows={4} placeholder="금년도 주요 성과 및 향후 추진 계획을 상세히 기재해 주세요" />
+      </Field>
+
+      {/* 6. 사업 관련 전반적인 점검 사항 (15문항) */}
+      <SectionLabel n="6" t="사업 관련 전반적인 점검 사항" />
+      <div className="rounded-md p-4 mb-5" style={{ border: `1px solid ${C.line}` }}>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm" style={{ borderCollapse: "collapse", minWidth: 600 }}>
+            <thead>
+              <tr style={{ borderBottom: `1px solid ${C.line}`, background: C.pineSoft }}>
+                <th className="text-center py-2 px-2 font-semibold w-24" style={{ color: C.pineDark }}>구분</th>
+                <th className="text-left py-2 px-3 font-semibold" style={{ color: C.pineDark }}>내용</th>
+                {["전혀\n그렇지않다", "그렇지\n않다", "보통\n이다", "그렇다", "매우\n그렇다"].map((scaleText, sIdx) => (
+                  <th key={sIdx} className="text-center py-2 px-1 font-semibold text-xs whitespace-pre-line w-16" style={{ color: C.pineDark }}>{scaleText}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {GYEOLGWA_CHECK_ITEMS.map((item, i) => (
+                <tr key={i} style={{ borderBottom: `1px dashed ${C.line}` }}>
+                  <td className="text-center py-2 px-2 font-semibold text-xs" style={{ color: C.gyeolgwa, borderRight: `1px solid ${C.line}` }}>
+                    {item.cat}
+                  </td>
+                  <td className="py-2 px-3 text-xs" style={{ color: C.ink }}>{item.text}</td>
+                  {[1, 2, 3, 4, 5].map((val) => (
+                    <td key={val} className="text-center py-2 px-1">
+                      <input 
+                        type="radio" 
+                        name={"g_gen_" + i} 
+                        checked={d["g_gen_" + i] === val} 
+                        onChange={() => u("g_gen_" + i, val)} 
+                        disabled={disabled}
+                        style={{ width: 16, height: 16 }}
+                      />
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* 7. 기타 의견 */}
+      <SectionLabel n="7" t="기타 의견" />
+      <Field label="향후 혹은 차기년도 계획 시 수정·보완해야 할 점">
+        <TA value={d.op_mod} onChange={(v) => u("op_mod", v)} disabled={disabled} rows={3} placeholder="수정·보완해야 할 점을 기재해 주세요" />
+      </Field>
+      <Field label="건의사항 등 기타 의견">
+        <TA value={d.op_etc} onChange={(v) => u("op_etc", v)} disabled={disabled} rows={3} placeholder="건의사항 및 기타 의견을 기재해 주세요" />
+      </Field>
+    </div>
+  );
+}
+
 function GonggongReadOnly({ p, data, asOf, type }) {
   const d = data || {};
   const achieve = pct(d.result, p.goal);
@@ -778,20 +967,26 @@ function GonggongReadOnly({ p, data, asOf, type }) {
         </div>
       ) : (
         <div>
-          <h4 className="font-bold mb-2.5 pb-1" style={{ color: C.pine, borderBottom: `2px solid ${C.pineSoft}` }}>결과확인 현황</h4>
-          <div className="grid grid-cols-2 gap-y-4 gap-x-4 text-[13px] mb-4">
+          <h4 className="font-bold mb-2.5 pb-1" style={{ color: C.pine, borderBottom: `2px solid ${C.pineSoft}` }}>결과확인 자체점검 현황</h4>
+          <div className="grid grid-cols-2 gap-y-3 gap-x-4 text-[13px] mb-4">
             <div>
-              <span className="block mb-0.5" style={{ color: C.muted }}>추진실적 → 달성률</span>
-              <span className="font-bold text-[14px]">{d.result || 0} <span className="font-normal text-xs">{p.unit}</span> → <span style={{color: pctColor(achieve)}}>{achieve != null ? achieve.toFixed(1) + "%" : "-"}</span></span>
+              <span className="block mb-0.5" style={{ color: C.muted }}>추진실적 / 달성률</span>
+              <span className="font-bold">{d.result || 0} {p.unit} → <span style={{color: pctColor(achieve)}}>{achieve != null ? achieve.toFixed(1) + "%" : "-"}</span></span>
             </div>
             <div>
-              <span className="block mb-0.5" style={{ color: C.muted }}>집행액 → 집행률</span>
-              <span className="font-bold text-[14px]">{noBudget ? "비예산" : `${d.spend || 0} `}<span className="font-normal text-xs">{noBudget?"":"백만원"}</span> {noBudget ? "" : "→ "} <span style={{color: pctColor(execRate)}}>{execRate != null ? execRate.toFixed(1) + "%" : (noBudget ? "" : "-")}</span></span>
+              <span className="block mb-0.5" style={{ color: C.muted }}>예산 집행액 / 집행률</span>
+              <span className="font-bold">{noBudget ? "비예산" : `${d.spend || 0} 백만원`} → <span style={{color: pctColor(execRate)}}>{execRate != null ? execRate.toFixed(1) + "%" : "-"}</span></span>
             </div>
+            <div><span className="block mb-0.5" style={{ color: C.muted }}>목표변경 여부</span><span className="font-semibold">{d.goal_changed || "미입력"}</span></div>
+            <div><span className="block mb-0.5" style={{ color: C.muted }}>모니터링 결과 반영</span><span className="font-semibold">{d.mon_reflect || "미입력"}</span></div>
+            <div><span className="block mb-0.5" style={{ color: C.muted }}>우수사업 추천 여부</span><span className="font-semibold">{d.best_rec || "미입력"}</span></div>
           </div>
-          <div>
-            <span className="block mb-1 text-[13px]" style={{ color: C.muted }}>주요 추진내용</span>
-            <div className="p-2.5 rounded text-[13px] leading-relaxed border bg-white whitespace-pre-wrap" style={{ borderColor: C.line }}>{d.g4 || "미입력"}</div>
+
+          <div className="space-y-3 text-[13px]">
+            <div><span className="block mb-1" style={{ color: C.muted }}>우수사업 추천 이유</span><div className="p-2.5 rounded border bg-white whitespace-pre-wrap">{d.best_rec_reason || "미입력"}</div></div>
+            <div><span className="block mb-1" style={{ color: C.muted }}>주요 성과 및 향후 계획</span><div className="p-2.5 rounded border bg-white whitespace-pre-wrap">{d.perf_and_plan || "미입력"}</div></div>
+            <div><span className="block mb-1" style={{ color: C.muted }}>향후/차기년도 수정·보완점</span><div className="p-2.5 rounded border bg-white whitespace-pre-wrap">{d.op_mod || "미입력"}</div></div>
+            <div><span className="block mb-1" style={{ color: C.muted }}>건의사항 등 기타의견</span><div className="p-2.5 rounded border bg-white whitespace-pre-wrap">{d.op_etc || "미입력"}</div></div>
           </div>
         </div>
       )}
@@ -872,36 +1067,6 @@ function MonitorChecklistForm({ p, data, set, disabled }) {
   );
 }
 
-function GyeolgwaGonggong({ p, data, set, disabled }) {
-  const d = data || {};
-  const u = (k, v) => set({ ...d, [k]: v });
-  const achieve = pct(d.result, p.goal);
-  const noBudget = p.budget === "비예산" || p.budget === "" || p.budget === "-";
-  const execRate = noBudget ? null : pct(d.spend, p.budget);
-  return (
-    <div>
-      <SectionLabel n="①" t="성과목표 현황 (12월말 기준)" />
-      <div className="flex items-center gap-2 text-sm mb-4">
-        <span style={{ color: C.muted }}>추진실적</span>
-        <IN type="number" value={d.result} onChange={(v) => u("result", v)} disabled={disabled} w={110} />
-        <span style={{ color: C.muted }}>→ 달성률</span>
-        <span className="font-bold" style={{ color: pctColor(achieve) }}>{achieve != null ? achieve.toFixed(1) + " %" : "—"}</span>
-      </div>
-      <SectionLabel n="②" t="예산집행 현황 (12월말 기준, 백만원)" />
-      {noBudget ? <p className="text-sm mb-4" style={{ color: C.muted }}>비예산 사업 — 해당 없음</p> : (
-        <div className="flex items-center gap-2 text-sm mb-4">
-          <span style={{ color: C.muted }}>· 집행액</span>
-          <IN type="number" value={d.spend} onChange={(v) => u("spend", v)} disabled={disabled} w={110} />
-          <span style={{ color: C.muted }}>→ 집행률</span>
-          <span className="font-bold" style={{ color: pctColor(execRate) }}>{execRate != null ? execRate.toFixed(1) + " %" : "—"}</span>
-        </div>
-      )}
-      <SectionLabel n="③" t="추진상황" />
-      <Field label="1) 주요 추진내용"><TA value={d.g4} onChange={(v) => u("g4", v)} disabled={disabled} /></Field>
-    </div>
-  );
-}
-
 function ChecklistForm({ schemaKey, data, set, disabled }) {
   const s = CHECKLISTS[schemaKey] || CHECKLISTS["gyeolgwa:monitor"];
   const d = data || {};
@@ -954,6 +1119,77 @@ function MonitorView({ projects, cfg, role, roleObj, me, setMe, sel, setSel, gro
     );
   }
 
+  // 관리자 모드: 공공 입력 내용과 모든 모니터링단의 입력 내용을 통합 조회
+  if (role === "admin") {
+    const gonggongKey = `${sel.pid}::${sel.type}::gonggong::gonggong`;
+    const gonggongData = evals[gonggongKey];
+    const monitorEvalKeys = Object.keys(evals).filter(k => k.startsWith(`${sel.pid}::${sel.type}::monitor::`));
+
+    return (
+      <div>
+        <BackBtn onClick={() => setSel(null)} />
+        <div className="mb-4">
+          <div className="flex items-center gap-2 flex-wrap mb-1">
+            <Pill color={sel.type === "ihaeng" ? C.ihaeng : C.gyeolgwa}>{sel.type === "ihaeng" ? "이행점검" : "결과확인"}</Pill>
+            <span className="text-xs font-mono" style={{ color: C.muted }}>{project.num}</span>
+            <Pill color={C.pine}>관리자 통합 열람 모드</Pill>
+          </div>
+          <h2 className="text-[22px] font-bold" style={{ color: C.ink }}>{project.name}</h2>
+          <div className="text-xs mt-1" style={{ color: C.muted }}>공공 담당자 및 모니터링단 입력 통합 조회</div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
+          {/* 왼쪽: 공공(사업담당) 입력 자료 */}
+          <div className="border rounded-md shadow-sm flex flex-col bg-white" style={{ borderColor: C.line, height: '700px' }}>
+            <div className="p-3 border-b flex justify-between items-center" style={{ background: "#F4F7F6", borderColor: C.line }}>
+              <span className="font-bold text-sm" style={{ color: C.ihaeng }}>📄 공공(사업담당) 제출 자료</span>
+              <span className="text-xs" style={{ color: C.muted }}>{gonggongData ? "제출 완료" : "미제출"}</span>
+            </div>
+            <div className="p-5 overflow-y-auto flex-1 custom-scrollbar">
+              <GonggongReadOnly p={project} data={gonggongData} asOf={cfg.asOf} type={sel.type} />
+            </div>
+          </div>
+
+          {/* 오른쪽: 모니터링단 평가 내역 전체 목록 */}
+          <div className="border rounded-md shadow-sm flex flex-col bg-white" style={{ borderColor: C.line, height: '700px' }}>
+            <div className="p-3 border-b flex justify-between items-center" style={{ background: "#F4F7F6", borderColor: C.line }}>
+              <span className="font-bold text-sm" style={{ color: C.gyeolgwa }}>👥 모니터링단 평가 내역 ({monitorEvalKeys.length}명 참여)</span>
+            </div>
+            <div className="p-5 overflow-y-auto flex-1 custom-scrollbar space-y-6">
+              {monitorEvalKeys.length === 0 ? (
+                <div className="py-12 text-center text-sm" style={{ color: C.muted }}>아직 모니터링단에서 입력한 평가가 없습니다.</div>
+              ) : (
+                monitorEvalKeys.map((k) => {
+                  const evalItem = evals[k];
+                  const evaluatorName = k.split("::")[3] || "익명";
+                  return (
+                    <div key={k} className="p-4 rounded-lg border bg-[#FAF9F4]" style={{ borderColor: C.line }}>
+                      <div className="flex justify-between items-center mb-3 pb-2 border-b" style={{ borderColor: C.line }}>
+                        <span className="font-bold text-sm" style={{ color: C.pineDark }}>평가자: {evaluatorName}</span>
+                        <span className="text-xs text-gray-500">{evalItem._updated ? new Date(evalItem._updated).toLocaleDateString() : ""}</span>
+                      </div>
+                      {sel.type === "ihaeng" ? (
+                        <div className="text-xs space-y-2">
+                          <div><strong style={{ color: C.muted }}>계획 이행 정도:</strong> {evalItem.m_deg_plan || "미입력"}단계</div>
+                          <div><strong style={{ color: C.muted }}>예산 사용 이행:</strong> {evalItem.m_deg_budget || "미입력"}단계</div>
+                          <div><strong style={{ color: C.muted }}>종합 의견 및 제언:</strong><p className="mt-1 p-2 bg-white rounded border" style={{ borderColor: C.line }}>{evalItem.m_opinion || "내용 없음"}</p></div>
+                        </div>
+                      ) : (
+                        <div className="text-xs space-y-2">
+                          <div><strong style={{ color: C.muted }}>총평:</strong><p className="mt-1 p-2 bg-white rounded border" style={{ borderColor: C.line }}>{evalItem.tx_0 || "내용 없음"}</p></div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const open = periodOpen(sel.type, groupOfRole);
   const disabled = !open;
 
@@ -984,9 +1220,14 @@ function MonitorView({ projects, cfg, role, roleObj, me, setMe, sel, setSel, gro
           else if (!(d.op_perf || "").trim() || !(d.op_diff || "").trim() || !(d.op_improve || "").trim()) valid = false;
         }
       } else {
-        if (d.result === undefined || d.result === "") valid = false;
+        // 결과확인 유효성 체크
+        if (!d.type_key || !d.type_coop || !d.type_bal) valid = false;
+        else if (d.result === undefined || d.result === "") valid = false;
         else if (!noBudget && (d.spend === undefined || d.spend === "")) valid = false;
-        else if (!(d.g4 || "").trim()) valid = false;
+        else if (!d.goal_changed || !d.mon_reflect || !d.best_rec) valid = false;
+        else if (!(d.best_rec_reason || "").trim()) valid = false;
+        else if (!(d.perf_and_plan || "").trim()) valid = false;
+        else if (!checkGen("g_gen", 15)) valid = false;
       }
     } else {
       if (sel.type === "ihaeng") {
@@ -1000,7 +1241,7 @@ function MonitorView({ projects, cfg, role, roleObj, me, setMe, sel, setSel, gro
     }
 
     if (!valid) {
-      alert("입력되지 않은 항목이 있습니다. 모든 빈칸을 확인해주세요.");
+      alert("입력되지 않은 항목이 있습니다. 모든 빈칸과 점검 항목을 확인해주세요.");
       return;
     }
 
@@ -1232,6 +1473,7 @@ function Evidence({ projects }) {
             <select value={type} onChange={(e) => setType(e.target.value)} className="w-full rounded-md px-2.5 py-1.5 text-sm bg-white" style={{ border: `1px solid ${C.line}`, outline: 'none' }}>
               <option value="성과지표 근거자료">성과지표 근거자료</option>
               <option value="사업관련 보도자료">사업관련 보도자료</option>
+              <option value="세부사업목록(별첨자료) 한글파일">세부사업목록(별첨자료) 한글파일</option>
             </select>
           </Field>
         </div>
@@ -1279,7 +1521,7 @@ function Evidence({ projects }) {
           <thead>
             <tr style={{ background: C.pineSoft }}>
               <th className="text-left px-3 py-2" style={{ color: C.pineDark }}>사업</th>
-              <th className="text-left px-3 py-2 w-36" style={{ color: C.pineDark }}>유형</th>
+              <th className="text-left px-3 py-2 w-48" style={{ color: C.pineDark }}>유형</th>
               <th className="text-left px-3 py-2" style={{ color: C.pineDark }}>제목</th>
               <th className="text-center px-3 py-2 w-20" style={{ color: C.pineDark }}>등록자</th>
               <th className="text-center px-3 py-2 w-24" style={{ color: C.pineDark }}>일자</th>
@@ -1788,7 +2030,7 @@ function App() {
         <div style={{ background: C.surface, border: `1px solid ${C.line}` }} className="rounded-lg md:rounded-tl-none p-5 md:p-7 shadow-sm">
           {view === "summary" && <SummaryDashboard projects={projects} evals={evals} onOpen={(pid, type) => { setSel({ pid, type }); setView("monitor"); }} />}
           {view === "dash" && <Dashboard projects={projects} evals={evals} onOpen={(pid, type) => { setSel({ pid, type }); setView("monitor"); }} />}
-          {view === "monitor" && role !== "admin" && <MonitorView projects={projects} cfg={cfg} role={role} roleObj={roleObj} me={me} setMe={setMe} sel={sel} setSel={setSel} groupOfRole={groupOfRole} periodOpen={periodOpen} evals={evals} saveEvals={saveEvals} saveOverride={saveOverride} />}
+          {view === "monitor" && <MonitorView projects={projects} cfg={cfg} role={role} roleObj={roleObj} me={me} setMe={setMe} sel={sel} setSel={setSel} groupOfRole={groupOfRole} periodOpen={periodOpen} evals={evals} saveEvals={saveEvals} saveOverride={saveOverride} />}
           {view === "evidence" && <Evidence projects={projects} />}
           {view === "admin" && role === "admin" && <Admin cfg={cfg} saveCfg={saveCfg} projects={projects} evals={evals} />}
           {view === "aggregate" && role === "admin" && <SummaryAggregate projects={projects} evals={evals} />}
