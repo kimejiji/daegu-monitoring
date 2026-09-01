@@ -83,12 +83,6 @@ const DEFAULT_CFG = {
   overrides: {}
 };
 
-const SCALE_SANG = [
-  { v: 3, l: "상", hint: "90% 이상" },
-  { v: 2, l: "중", hint: "70–90%" },
-  { v: 1, l: "하", hint: "70% 미만" },
-];
-
 const SCALE_5 = [
   { v: 1, l: "매우 미흡", hint: "20% 미만" },
   { v: 2, l: "미흡", hint: "20~39%" },
@@ -114,7 +108,7 @@ const GENERAL_CHECK_ITEMS = [
   { cat: "중요성 및 효과성", text: "이 사업은 시민의 문제나 욕구 해결에 효과적이다" },
 ];
 
-// 결과확인 전반적 점검 문항 (15문항)
+// 공공 결과확인 전반적 점검 문항 (15문항)
 const GYEOLGWA_CHECK_ITEMS = [
   { cat: "인지도", text: "시민들은 이 사업에 대해 잘 알고 있다" },
   { cat: "인지도", text: "사업에 대한 홍보가 잘 이루어지고 있다" },
@@ -133,13 +127,15 @@ const GYEOLGWA_CHECK_ITEMS = [
   { cat: "기여도", text: "이 사업이 대구시민의 행복 증진에 기여한다" }
 ];
 
-const CHECKLISTS = {
-  "gyeolgwa:monitor": {
-    scale: SCALE_SANG,
-    items: ["예산집행율", "성과목표(달성율)", "사업추진과정의 충실성", "우수사업 대상으로 적절성", "지속 추진 필요성", "구민 복지체감도 달성도"],
-    texts: ["전반적인 사업에 대한 평가(총평)"],
-  },
-};
+// 모니터링단 결과평가 전반적 점검 문항 (6문항)
+const MONITOR_GYEOLGWA_CHECK_ITEMS = [
+  { cat: "사업성과", text: "사업의 성과를 확인할 수 있는 체계가 잘 구성되어 있다" },
+  { cat: "사업성과", text: "사업이 전반적으로 중요해 지속적인 추진이 필요하다" },
+  { cat: "균형발전", text: "전반적으로 이 사업이 지역균형발전에 기여한다" },
+  { cat: "균형발전", text: "지역균형발전을 위해 이 사업을 확대해야 한다" },
+  { cat: "기여도", text: "이 사업은 시민들의 욕구를 해결하는데 도움이 된다" },
+  { cat: "기여도", text: "이 사업이 대구시민의 행복 증진에 기여한다" },
+];
 
 function Pill({ children, color }) {
   return <span className="inline-block px-2 py-0.5 rounded-full text-xs font-semibold" style={{ background: `${color}1A`, color }}>{children}</span>;
@@ -1026,17 +1022,17 @@ function MonitorChecklistForm({ p, data, set, disabled }) {
   return (
     <div>
       <div className="mb-4">
-        <label className="block text-sm font-semibold mb-2" style={{ color: C.ink }}>사업계획 이행 정도</label>
+        <label className="block text-sm font-semibold mb-2" style={{ color: C.ink }}>1. 사업계획 이행 정도</label>
         <Segment scale={SCALE_5} value={d.m_deg_plan} onChange={(v) => u("m_deg_plan", v)} disabled={disabled} />
       </div>
 
       <div className="mb-6">
-        <label className="block text-sm font-semibold mb-2" style={{ color: C.ink }}>사업예산 사용 이행</label>
+        <label className="block text-sm font-semibold mb-2" style={{ color: C.ink }}>2. 사업예산 사용 이행</label>
         <Segment scale={SCALE_5} value={d.m_deg_budget} onChange={(v) => u("m_deg_budget", v)} disabled={disabled} />
       </div>
 
       <div className="mb-6">
-        <label className="block text-sm font-semibold mb-3" style={{ color: C.ink }}>사업 관련 전반적인 점검 사항 (모니터링단 평가)</label>
+        <label className="block text-sm font-semibold mb-3" style={{ color: C.ink }}>3. 사업 관련 전반적인 점검 사항 (모니터링단 평가)</label>
         <div className="flex flex-col gap-3">
           {GENERAL_CHECK_ITEMS.map((item, i) => (
             <div key={i} className="p-3 rounded-md bg-white border" style={{ borderColor: C.line }}>
@@ -1060,30 +1056,82 @@ function MonitorChecklistForm({ p, data, set, disabled }) {
         </div>
       </div>
 
-      <Field label="모니터링단 종합 의견 및 제언">
+      <Field label="4. 모니터링단 종합 의견 및 제언">
         <TA value={d.m_opinion} onChange={(v) => u("m_opinion", v)} disabled={disabled} rows={5} placeholder="본 사업의 이행 상황에 대한 총평, 우수한 점, 개선할 점 등을 자유롭게 작성해 주세요." />
       </Field>
     </div>
   );
 }
 
-function ChecklistForm({ schemaKey, data, set, disabled }) {
-  const s = CHECKLISTS[schemaKey] || CHECKLISTS["gyeolgwa:monitor"];
+// 모니터링단 결과평가 전용 입력 폼 (신규 양식)
+function MonitorGyeolgwaForm({ p, data, set, disabled }) {
   const d = data || {};
   const u = (k, v) => set({ ...d, [k]: v });
+
   return (
     <div>
-      {s.items.map((it, i) => (
-        <div key={i} className="mb-4">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-            <span className="text-sm font-semibold" style={{ color: C.ink }}>{it}</span>
-            <Segment scale={s.scale} value={d["it_" + i]} onChange={(v) => u("it_" + i, v)} disabled={disabled} />
-          </div>
+      <div className="mb-5">
+        <label className="block text-sm font-semibold mb-2" style={{ color: C.ink }}>1. 사업계획 이행 정도</label>
+        <Segment scale={SCALE_5} value={d.mg_deg_plan} onChange={(v) => u("mg_deg_plan", v)} disabled={disabled} />
+      </div>
+
+      <div className="mb-5">
+        <label className="block text-sm font-semibold mb-2" style={{ color: C.ink }}>2. 사업예산 사용 이행</label>
+        <Segment scale={SCALE_5} value={d.mg_deg_budget} onChange={(v) => u("mg_deg_budget", v)} disabled={disabled} />
+      </div>
+
+      <Field label="3. 사업 성과 우수성">
+        <TA value={d.mg_perf_excel} onChange={(v) => u("mg_perf_excel", v)} disabled={disabled} rows={3} placeholder="사업 성과의 우수성에 대한 평가 의견을 작성하세요" />
+      </Field>
+
+      <Field label="4. 차년도 계획 반영 예정 사항의 적절성">
+        <TA value={d.mg_next_plan} onChange={(v) => u("mg_next_plan", v)} disabled={disabled} rows={3} placeholder="차년도 계획 반영 예정 사항에 대한 적절성을 평가하세요" />
+      </Field>
+
+      <div className="mb-5">
+        <label className="block text-sm font-semibold mb-2" style={{ color: C.ink }}>5. 사업 관련 전반적인 점검 사항</label>
+        <div className="flex flex-col gap-2.5">
+          {MONITOR_GYEOLGWA_CHECK_ITEMS.map((item, i) => (
+            <div key={i} className="p-3 rounded-md bg-white border" style={{ borderColor: C.line }}>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div className="text-xs sm:text-sm">
+                  <span className="font-bold mr-1.5" style={{ color: C.gyeolgwa }}>[{item.cat}]</span>
+                  <span style={{ color: C.ink }}>{item.text}</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  {[1, 2, 3, 4, 5].map((val) => (
+                    <button key={val} disabled={disabled} onClick={() => u("mg_gen_" + i, d["mg_gen_" + i] === val ? null : val)}
+                      className="w-7 h-7 sm:w-8 sm:h-8 rounded text-xs sm:text-sm font-medium transition-colors"
+                      style={{ border: `1px solid ${d["mg_gen_" + i] === val ? C.gyeolgwa : C.line}`, background: d["mg_gen_" + i] === val ? C.gyeolgwa : "#fff", color: d["mg_gen_" + i] === val ? "#fff" : C.ink, opacity: disabled ? 0.5 : 1, cursor: disabled ? "not-allowed" : "pointer" }}>
+                      {val}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
-      ))}
-      {s.texts.map((t, i) => (
-        <Field key={"t" + i} label={t}><TA value={d["tx_" + i]} onChange={(v) => u("tx_" + i, v)} disabled={disabled} rows={4} placeholder="해당 사업에 대한 총평을 자유롭게 기재해주세요." /></Field>
-      ))}
+      </div>
+
+      <Field label="6. 사업 전반에 대한 의견">
+        <TA value={d.mg_opinion} onChange={(v) => u("mg_opinion", v)} disabled={disabled} rows={4} placeholder="사업 전반에 대한 총평 및 제언을 작성하세요" />
+      </Field>
+
+      <div className="mb-4 p-4 rounded-md border" style={{ borderColor: C.line, background: "#FAF9F4" }}>
+        <label className="block text-sm font-semibold mb-2" style={{ color: C.ink }}>7. 우수사업 추천 여부</label>
+        <div className="flex items-center gap-6 mb-3 text-sm">
+          <label className="flex items-center gap-1.5 cursor-pointer font-semibold">
+            <input type="radio" name="mg_best_rec" checked={d.mg_best_rec === "추천"} onChange={() => u("mg_best_rec", "추천")} disabled={disabled} /> 추천
+          </label>
+          <label className="flex items-center gap-1.5 cursor-pointer font-semibold">
+            <input type="radio" name="mg_best_rec" checked={d.mg_best_rec === "비추천"} onChange={() => u("mg_best_rec", "비추천")} disabled={disabled} /> 비추천
+          </label>
+        </div>
+        <div>
+          <label className="block text-xs font-semibold mb-1" style={{ color: C.pineDark }}>[우수사업 추천하는 이유는?]</label>
+          <TA value={d.mg_best_reason} onChange={(v) => u("mg_best_reason", v)} disabled={disabled} rows={3} placeholder="우수사업으로 추천하는 사유(또는 비추천 사유)를 구체적으로 기재해 주세요" />
+        </div>
+      </div>
     </div>
   );
 }
@@ -1176,7 +1224,12 @@ function MonitorView({ projects, cfg, role, roleObj, me, setMe, sel, setSel, gro
                         </div>
                       ) : (
                         <div className="text-xs space-y-2">
-                          <div><strong style={{ color: C.muted }}>총평:</strong><p className="mt-1 p-2 bg-white rounded border" style={{ borderColor: C.line }}>{evalItem.tx_0 || "내용 없음"}</p></div>
+                          <div><strong style={{ color: C.muted }}>계획 이행 정도:</strong> {evalItem.mg_deg_plan || "미입력"}단계</div>
+                          <div><strong style={{ color: C.muted }}>예산 사용 이행:</strong> {evalItem.mg_deg_budget || "미입력"}단계</div>
+                          <div><strong style={{ color: C.muted }}>사업 성과 우수성:</strong><p className="mt-0.5 p-1.5 bg-white rounded border" style={{ borderColor: C.line }}>{evalItem.mg_perf_excel || "내용 없음"}</p></div>
+                          <div><strong style={{ color: C.muted }}>차년도 계획 적절성:</strong><p className="mt-0.5 p-1.5 bg-white rounded border" style={{ borderColor: C.line }}>{evalItem.mg_next_plan || "내용 없음"}</p></div>
+                          <div><strong style={{ color: C.muted }}>우수사업 추천:</strong> {evalItem.mg_best_rec || "미입력"} {evalItem.mg_best_reason ? `(${evalItem.mg_best_reason})` : ''}</div>
+                          <div><strong style={{ color: C.muted }}>사업 전반 의견:</strong><p className="mt-0.5 p-1.5 bg-white rounded border" style={{ borderColor: C.line }}>{evalItem.mg_opinion || "내용 없음"}</p></div>
                         </div>
                       )}
                     </div>
@@ -1220,7 +1273,7 @@ function MonitorView({ projects, cfg, role, roleObj, me, setMe, sel, setSel, gro
           else if (!(d.op_perf || "").trim() || !(d.op_diff || "").trim() || !(d.op_improve || "").trim()) valid = false;
         }
       } else {
-        // 결과확인 유효성 체크
+        // 공공 결과확인 유효성 체크
         if (!d.type_key || !d.type_coop || !d.type_bal) valid = false;
         else if (d.result === undefined || d.result === "") valid = false;
         else if (!noBudget && (d.spend === undefined || d.spend === "")) valid = false;
@@ -1235,8 +1288,14 @@ function MonitorView({ projects, cfg, role, roleObj, me, setMe, sel, setSel, gro
         else if (!checkGen("m_gen", 13)) valid = false;
         else if (!(d.m_opinion || "").trim()) valid = false;
       } else {
-        if (!checkGen("it", 6)) valid = false;
-        else if (!(d.tx_0 || "").trim()) valid = false;
+        // 모니터링단 결과평가 유효성 체크
+        if (!d.mg_deg_plan || !d.mg_deg_budget) valid = false;
+        else if (!(d.mg_perf_excel || "").trim()) valid = false;
+        else if (!(d.mg_next_plan || "").trim()) valid = false;
+        else if (!checkGen("mg_gen", 6)) valid = false;
+        else if (!(d.mg_opinion || "").trim()) valid = false;
+        else if (!d.mg_best_rec) valid = false;
+        else if (!(d.mg_best_reason || "").trim()) valid = false;
       }
     }
 
@@ -1270,8 +1329,8 @@ function MonitorView({ projects, cfg, role, roleObj, me, setMe, sel, setSel, gro
 
         {needName && (
           <div className="mb-4 max-w-sm">
-            <label className="block text-sm font-bold mb-1.5" style={{ color: "#C34B36" }}>평가자 이름 / ID (이름을 먼저 입력해주세요)</label>
-            <IN value={me} onChange={setMe} placeholder="예: 홍길동(분과명)" disabled={disabled} />
+            <label className="block text-sm font-bold mb-1.5" style={{ color: "#C34B36" }}>평가자 소속 및 성명 (필수 입력)</label>
+            <IN value={me} onChange={setMe} placeholder="예: [행복진흥원] 홍길동" disabled={disabled} />
           </div>
         )}
 
@@ -1288,17 +1347,17 @@ function MonitorView({ projects, cfg, role, roleObj, me, setMe, sel, setSel, gro
 
           <div className="border rounded-md shadow-sm flex flex-col bg-white" style={{ borderColor: C.line, height: '700px', opacity: needName && !me.trim() && !disabled ? 0.5 : 1, pointerEvents: needName && !me.trim() ? "none" : "auto" }}>
             <div className="p-3 border-b font-bold text-sm" style={{ background: "#F4F7F6", color: "#C34B36", borderColor: C.line }}>
-              ✏️ 모니터링단 평가 입력
+              ✏️ 모니터링단 평가 입력 ({sel.type === "ihaeng" ? "이행점검" : "결과평가"})
             </div>
             <div className="p-5 overflow-y-auto flex-1 custom-scrollbar">
               {sel.type === "ihaeng"
                 ? <MonitorChecklistForm p={project} data={draft} set={setDraft} disabled={disabled} />
-                : <ChecklistForm schemaKey={`${sel.type}:${groupOfRole}`} data={draft} set={setDraft} disabled={disabled} />
+                : <MonitorGyeolgwaForm p={project} data={draft} set={setDraft} disabled={disabled} />
               }
             </div>
             <div className="p-3 border-t bg-gray-50 flex items-center justify-between" style={{ borderColor: C.line }}>
               {needName && !me.trim() && !disabled ? (
-                <span className="text-sm font-bold ml-2" style={{ color: C.bad }}>평가자 이름을 먼저 입력하세요.</span>
+                <span className="text-sm font-bold ml-2" style={{ color: C.bad }}>평가자 소속/성명을 먼저 입력하세요.</span>
               ) : (
                 <span className="text-xs text-gray-500 ml-2">모든 항목을 확인 후 저장해주세요.</span>
               )}
@@ -1640,18 +1699,25 @@ function SummaryAggregate({ projects, evals }) {
 
         list.push({ id: p.id, num: p.num, name: p.name, cnt, avgPlan: avgPlan.toFixed(2), avgBdg: avgBdg.toFixed(2), avgGen: avgGen.toFixed(2), totalAvg: totalAvg.toFixed(2) });
       } else {
-        let sumItems = 0, itemCnt = 0;
+        // 모니터링단 결과평가 집계 (5점 척도 항목 기준)
+        let sumPlan = 0, sumBdg = 0, sumGen = 0, genCnt = 0;
         evalKeys.forEach(k => {
           const item = evals[k] || {};
+          if (item.mg_deg_plan) sumPlan += Number(item.mg_deg_plan);
+          if (item.mg_deg_budget) sumBdg += Number(item.mg_deg_budget);
           for (let i = 0; i < 6; i++) {
-            if (item["it_" + i]) {
-              sumItems += Number(item["it_" + i]);
-              itemCnt++;
+            if (item["mg_gen_" + i]) {
+              sumGen += Number(item["mg_gen_" + i]);
+              genCnt++;
             }
           }
         });
-        const totalAvg = itemCnt > 0 ? (sumItems / itemCnt) : 0;
-        list.push({ id: p.id, num: p.num, name: p.name, cnt, totalAvg: totalAvg.toFixed(2) });
+        const avgPlan = (sumPlan / cnt) || 0;
+        const avgBdg = (sumBdg / cnt) || 0;
+        const avgGen = genCnt > 0 ? (sumGen / genCnt) : 0;
+        const totalAvg = ((avgPlan + avgBdg + avgGen) / 3) || 0;
+
+        list.push({ id: p.id, num: p.num, name: p.name, cnt, avgPlan: avgPlan.toFixed(2), avgBdg: avgBdg.toFixed(2), avgGen: avgGen.toFixed(2), totalAvg: totalAvg.toFixed(2) });
       }
     });
     return list;
@@ -1679,16 +1745,10 @@ function SummaryAggregate({ projects, evals }) {
                 <th className="text-left px-3 py-2 w-24" style={{ color: C.pineDark }}>과제번호</th>
                 <th className="text-left px-3 py-2" style={{ color: C.pineDark }}>사업명</th>
                 <th className="text-center px-3 py-2 w-20" style={{ color: C.pineDark }}>참여인원</th>
-                {type === "ihaeng" ? (
-                  <>
-                    <th className="text-center px-3 py-2 w-28" style={{ color: C.pineDark }}>사업계획 이행</th>
-                    <th className="text-center px-3 py-2 w-28" style={{ color: C.pineDark }}>예산집행 이행</th>
-                    <th className="text-center px-3 py-2 w-28" style={{ color: C.pineDark }}>전반적 점검</th>
-                    <th className="text-center px-3 py-2 w-24 font-bold" style={{ color: C.pineDark }}>종합 평균</th>
-                  </>
-                ) : (
-                  <th className="text-center px-3 py-2 w-32 font-bold" style={{ color: C.pineDark }}>종합 평균 (상3·중2·하1)</th>
-                )}
+                <th className="text-center px-3 py-2 w-28" style={{ color: C.pineDark }}>사업계획 이행</th>
+                <th className="text-center px-3 py-2 w-28" style={{ color: C.pineDark }}>예산집행 이행</th>
+                <th className="text-center px-3 py-2 w-28" style={{ color: C.pineDark }}>전반적 점검</th>
+                <th className="text-center px-3 py-2 w-24 font-bold" style={{ color: C.pineDark }}>종합 평균</th>
               </tr>
             </thead>
             <tbody>
@@ -1697,16 +1757,10 @@ function SummaryAggregate({ projects, evals }) {
                   <td className="px-3 py-2.5 font-mono text-xs font-semibold" style={{ color: C.muted }}>{row.num}</td>
                   <td className="px-3 py-2.5 font-medium" style={{ color: C.ink }}>{row.name}</td>
                   <td className="px-3 py-2.5 text-center font-bold" style={{ color: C.pine }}>{row.cnt}명</td>
-                  {type === "ihaeng" ? (
-                    <>
-                      <td className="px-3 py-2.5 text-center">{row.avgPlan}점</td>
-                      <td className="px-3 py-2.5 text-center">{row.avgBdg}점</td>
-                      <td className="px-3 py-2.5 text-center">{row.avgGen}점</td>
-                      <td className="px-3 py-2.5 text-center font-bold text-blue-700 bg-blue-50/50">{row.totalAvg}점</td>
-                    </>
-                  ) : (
-                    <td className="px-3 py-2.5 text-center font-bold text-blue-700 bg-blue-50/50">{row.totalAvg}점</td>
-                  )}
+                  <td className="px-3 py-2.5 text-center">{row.avgPlan}점</td>
+                  <td className="px-3 py-2.5 text-center">{row.avgBdg}점</td>
+                  <td className="px-3 py-2.5 text-center">{row.avgGen}점</td>
+                  <td className="px-3 py-2.5 text-center font-bold text-blue-700 bg-blue-50/50">{row.totalAvg}점</td>
                 </tr>
               ))}
             </tbody>
